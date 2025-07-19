@@ -1,40 +1,57 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-require('dotenv').config();
+import express from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import sequelize from './config/db.js'; // Adjust path if necessary
 
-const Demo = require('./models/Demo');
+// Import routes
+import authRoutes from './routes/auth.route.js'; // Make sure you have this file
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
+const PORT = process.env.PORT || 3001;
 
-app.use(cors());
-app.use(express.json()); // ✅ This should come BEFORE your routes
+// --- Middlewares ---
 
-// Connect to MongoDB using MONGO_URI from .env
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log("Connected to MongoDB successfully"))
-.catch(err => console.log(err));
+// 1. CORS: Allow requests from your React frontend
+app.use(cors({
+  origin: 'http://localhost:5173', // The address of your React app
+}));
 
-// Test route to insert data
-app.post('/add-demo', async (req, res) => {
-  const { name, age } = req.body;
+// 2. Body Parser: To accept JSON data in request bodies
+app.use(express.json());
 
-  const demo = new Demo({
-    name,
-    age
-  });
+// --- API Routes ---
+app.use('/api/auth', authRoutes);
 
-  try {
-    const savedDemo = await demo.save();
-    res.status(201).json(savedDemo);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+// A simple health check route
+app.get('/', (req, res) => {
+  res.send('ProGrade API is running and healthy!');
 });
 
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// --- Server Startup Function ---
+const startServer = async () => {
+  try {
+    console.log('Attempting to connect to the database...');
+    await sequelize.authenticate();
+    console.log('✅ Database connection has been established successfully.');
+
+    // Sync models (only if needed, and prefer using migrations in production)
+    // await sequelize.sync({ alter: true });
+    // console.log('✅ Models synchronized.');
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Server is running on http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    // This will catch any errors during startup and log them
+    console.error('--- FAILED TO START SERVER ---');
+    console.error(error);
+    process.exit(1); // Exit the process with an error code
+  }
+};
+
+// Start the server
+startServer();

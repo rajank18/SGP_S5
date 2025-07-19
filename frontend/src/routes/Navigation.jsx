@@ -1,6 +1,7 @@
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom'
 import AuthRoutes from "../routes/AuthRoutes"
-import WebRoutes from "../routes/WebRoutes"
+import StudentRoutes from './StudentRoutes'
+import FacultyRoutes from './FacultyRoutes'
 
 
 const Navigation = () => {
@@ -9,7 +10,8 @@ const Navigation = () => {
             <Router>
                 <Routes>
                     <Route path='/auth/*' element={<AuthRoutes />} />
-                    <Route path='/*' element={<WebRoutes />} />
+                    <Route path='/*' element={<FacultyRoutes />} />
+                    <Route path='/student/*' element={<StudentRoutes />} />
                     
                 </Routes>
             </Router>

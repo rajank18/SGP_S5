@@ -8,12 +8,12 @@ const AuthRoutes = () => {
     return (
         <>
             <Routes>
-                <Route element={<Auth />}>
+                {/* <Route element={<Auth />}> */}
 
                 <Route path="login" element={<Login/>} />
                 
                 
-                </Route>
+                {/* </Route> */}
                   
             </Routes>
         </>

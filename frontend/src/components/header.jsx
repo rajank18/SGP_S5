@@ -4,15 +4,29 @@ import { useNavigate } from "react-router-dom";
 const Header = () => {
   const navigate = useNavigate();
 
+  // Get user from localStorage
+  const user = JSON.parse(localStorage.getItem('prograde_user')) || {};
+  const userName = user.name || "User";
+
+  // Generate initials (e.g., "RK" for "Rajan Kanzariya")
+  const getInitials = (name) => {
+    if (!name) return "";
+    const parts = name.trim().split(" ");
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+  const initials = getInitials(userName);
+
   const handleLogout = () => {
-    // Clear user data if stored
     localStorage.removeItem('prograde_token');
     localStorage.removeItem('prograde_user');
     navigate('/auth/login');
   };
 
+  //bg-[#308AF4]
+
   return (
-    <header className="bg-black text-white flex items-center justify-between px-6 py-3">
+    <header className="bg-[#328DFF] text-white flex items-center justify-between px-6 py-3">
       {/* Hamburger Menu */}
       <div className="flex-1">
         <button className="bg-transparent border-none text-white text-2xl cursor-pointer">
@@ -25,12 +39,10 @@ const Header = () => {
       </div>
       {/* Profile */}
       <div className="flex-1 flex items-center justify-end">
-        <img
-          src="https://ui-avatars.com/api/?name=Rajan&background=333&color=fff"
-          alt="Profile"
-          className="w-9 h-9 rounded-full mr-2"
-        />
-        <span className="mr-2">Rajan</span>
+        <div className="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-lg font-bold mr-2">
+          {initials}
+        </div>
+        <span className="mr-2">{userName}</span>
         <button
           onClick={handleLogout}
           className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"

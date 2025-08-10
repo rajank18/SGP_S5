@@ -11,7 +11,8 @@ import Course from './models/Course.js';
 import CourseFaculty from './models/CourseFaculty.js';
 // ...other models
 await sequelize.sync({ alter: true });
-// ...
+import facultyRoutes from './routes/faculty.route.js';
+
 
 
 // Load environment variables
@@ -39,6 +40,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/admin', adminRoutes);
+app.use('/api/faculty', facultyRoutes);
 
 
 // --- Server Startup Function ---

@@ -3,15 +3,18 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import sequelize from './config/db.js'; // Adjust path if necessary
 
+// Load environment variables FIRST
+dotenv.config();
+
 // Import routes
 import authRoutes from './routes/auth.route.js'; // Make sure you have this file
-
 import adminRoutes from './routes/admin.route.js';
+import facultyRoutes from './routes/faculty.route.js';
+
+// Import models
 import Course from './models/Course.js';
 import CourseFaculty from './models/CourseFaculty.js';
-// ...other models
-await sequelize.sync({ alter: true });
-import facultyRoutes from './routes/faculty.route.js';
+import User from './models/User.js';
 
 
 

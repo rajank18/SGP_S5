@@ -2,23 +2,35 @@ import express from 'express';
 import {
   createCourse,
   getCourses,
-  getCourseById, // <-- IMPORT THE NEW FUNCTION
+  getCourseById,
   assignFaculty,
   removeFaculty,
-  getAllFaculty
+  getAllFaculty,
+  createFaculty,
+  updateFaculty,
+  deleteFaculty
 } from '../controllers/admin.controller.js';
+import { authenticateAdmin } from '../middleware/adminAuth.js';
 
 const router = express.Router();
 
-router.post('/courses', createCourse);
-router.get('/courses', getCourses);
+// Test route to verify admin access
+router.get('/test', authenticateAdmin, (req, res) => {
+  res.json({ message: 'Admin route is working!', user: req.user });
+});
 
-// --- NEW ROUTE ---
-// This route handles requests for a single course, e.g., /api/admin/courses/1
-router.get('/courses/:courseId', getCourseById);
+// Faculty management routes - MUST come BEFORE course routes to avoid conflicts
+router.get('/faculty', authenticateAdmin, getAllFaculty);
+router.post('/faculty', authenticateAdmin, createFaculty);
+router.put('/faculty/:facultyId', authenticateAdmin, updateFaculty);
+router.delete('/faculty/:facultyId', authenticateAdmin, deleteFaculty);
 
-router.post('/courses/:courseId/faculty', assignFaculty);
-router.delete('/courses/:courseId/faculty/:facultyId', removeFaculty);
-router.get('/faculty', getAllFaculty);
+// Course management routes
+router.post('/courses', authenticateAdmin, createCourse);
+router.get('/courses', authenticateAdmin, getCourses);
+router.get('/courses/:courseId', authenticateAdmin, getCourseById);
 
+// Course-Faculty assignment routes
+router.post('/courses/:courseId/faculty', authenticateAdmin, assignFaculty);
+router.delete('/courses/:courseId/faculty/:facultyId', authenticateAdmin, removeFaculty);
 export default router;

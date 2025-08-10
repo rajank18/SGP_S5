@@ -22,6 +22,24 @@ export const getCourses = async (req, res) => {
   }
 };
 
+// --- NEW FUNCTION ---
+// Get a single course by its ID
+export const getCourseById = async (req, res) => {
+    try {
+        const { courseId } = req.params; // Get the ID from the URL parameter
+        const course = await Course.findByPk(courseId); // Find by Primary Key
+
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        res.json(course);
+    } catch (err) {
+        res.status(500).json({ message: 'Error fetching course', error: err.message });
+    }
+};
+
+
 // Assign faculty to course
 export const assignFaculty = async (req, res) => {
   try {

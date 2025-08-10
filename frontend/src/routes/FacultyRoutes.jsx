@@ -7,7 +7,7 @@ import CourseDetailsPage from '../pages/faculty/CourseDetails'
 const FacultyRoutes = () => {
   return (
     <Routes>
-      <Route path="faculty" element={<Web/>}>
+      <Route path="" element={<Web/>}>
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="csv" element={<CourseDetailsPage />} />
       </Route>

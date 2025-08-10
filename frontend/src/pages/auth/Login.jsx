@@ -48,7 +48,9 @@ const Login = () => {
             localStorage.setItem('prograde_token', data.token);
             localStorage.setItem('prograde_user', JSON.stringify(data.user));
             setTimeout(() => {
-                if (data.user.role === 'faculty') {
+                if (data.user.role === 'admin') {
+                    navigate('/admin/dashboard');
+                } else if (data.user.role === 'faculty') {
                     navigate('/faculty/dashboard');
                 } else {
                     navigate('/student/dashboard');

@@ -7,6 +7,7 @@ const Header = () => {
   // Get user from localStorage
   const user = JSON.parse(localStorage.getItem('prograde_user')) || {};
   const userName = user.name || "User";
+  const userRole = user.role || "user";
 
   // Generate initials (e.g., "RK" for "Rajan Kanzariya")
   const getInitials = (name) => {
@@ -43,6 +44,7 @@ const Header = () => {
           {initials}
         </div>
         <span className="mr-2">{userName}</span>
+        <span className="mr-2 text-sm bg-white/20 px-2 py-1 rounded">{userRole}</span>
         <button
           onClick={handleLogout}
           className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"

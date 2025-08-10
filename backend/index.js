@@ -6,6 +6,14 @@ import sequelize from './config/db.js'; // Adjust path if necessary
 // Import routes
 import authRoutes from './routes/auth.route.js'; // Make sure you have this file
 
+import adminRoutes from './routes/admin.route.js';
+import Course from './models/Course.js';
+import CourseFaculty from './models/CourseFaculty.js';
+// ...other models
+await sequelize.sync({ alter: true });
+// ...
+
+
 // Load environment variables
 dotenv.config();
 
@@ -29,6 +37,8 @@ app.use('/api/auth', authRoutes);
 app.get('/', (req, res) => {
   res.send('ProGrade API is running and healthy!');
 });
+
+app.use('/api/admin', adminRoutes);
 
 
 // --- Server Startup Function ---

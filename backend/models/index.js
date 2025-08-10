@@ -10,6 +10,16 @@ import ProjectParticipant from './ProjectParticipant.js';
 
 // --- Define Relationships ---
 
+// Department and User Relationship
+Department.hasMany(User, {
+  foreignKey: 'departmentId',
+  as: 'users',
+});
+User.belongsTo(Department, {
+  foreignKey: 'departmentId',
+  as: 'department',
+});
+
 // Project and ProjectParticipant Relationship
 Project.hasMany(ProjectParticipant, {
   foreignKey: 'projectId',

@@ -10,6 +10,7 @@ const FacultyRoutes = () => {
       <Route path="" element={<Web/>}>
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="csv" element={<CourseDetailsPage />} />
+        <Route path="courses/:courseId" element={<CourseDetailsPage />} />
       </Route>
     </Routes>
   );

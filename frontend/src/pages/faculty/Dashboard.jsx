@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
+<<<<<<< Updated upstream
 import BackButton from '@/components/ui/BackButton';
+=======
+import { useNavigate } from 'react-router-dom';
+>>>>>>> Stashed changes
 
 const Dashboard = () => {
     const [assignedCourses, setAssignedCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchAssignedCourses();
@@ -82,7 +87,11 @@ const Dashboard = () => {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {assignedCourses.map((course, index) => (
-                            <div key={course.id || index} className="bg-white rounded-xl shadow-md p-6 flex flex-col justify-between hover:shadow-lg transition-shadow">
+                            <div
+                                key={course.id || index}
+                                className="bg-white rounded-xl shadow-md p-6 flex flex-col justify-between hover:shadow-lg transition-shadow cursor-pointer"
+                                onClick={() => navigate(`/faculty/courses/${course.id}`)}
+                            >
                                 <div>
                                     <h3 className="text-lg font-bold text-gray-800">{course.name}</h3>
                                     <p className="text-sm text-gray-500 mt-1">{course.courseCode}</p>

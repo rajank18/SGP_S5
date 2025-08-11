@@ -30,9 +30,9 @@ const CoursePopup = ({ onCreateCourse, onClose }) => {
 
     return (
         // Modal backdrop with blur effect
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 min-h-screen">
             {/* Modal container */}
-            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-lg">
+            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-lg border-0">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-gray-800">Create New Course</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-800">

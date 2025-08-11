@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Edit, Trash, PlusCircle } from 'lucide-react';
+import BackButton from '@/components/ui/BackButton';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -79,6 +80,9 @@ const CourseManagement = () => {
 
   return (
     <div className={`container mx-auto p-6 space-y-6 ${isModalOpen ? 'overflow-hidden' : ''}`}>
+      <div className="mb-2">
+        <BackButton />
+      </div>
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2"><BookOpen /> Course Management</h1>
         <Button onClick={() => { setIsModalOpen(true); setEditingCourse(null); }} className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2 text-white">
@@ -132,12 +136,12 @@ const CourseManagement = () => {
         <>
           {/* Blur + dark backdrop */}
           <div
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 min-h-screen"
             onClick={() => setIsModalOpen(false)}
           />
 
-          <div className="fixed inset-0 flex justify-center items-center z-50">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+          <div className="fixed inset-0 flex justify-center items-center z-50 min-h-screen">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md border-0">
               <h2 className="text-xl font-bold mb-4">{editingCourse ? 'Edit Course' : 'Add Course'}</h2>
               <form onSubmit={handleSaveCourse} className="space-y-4">
                 {['name', 'courseCode', 'semester', 'year', 'description'].map((field) => (

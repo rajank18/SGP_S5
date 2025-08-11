@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from 'react-router-dom';
 import { ClipboardList, PlusCircle, Trash } from 'lucide-react';
+import BackButton from '@/components/ui/BackButton';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -74,6 +75,9 @@ const CourseAssignments = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <div className="mb-2">
+        <BackButton />
+      </div>
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2"><ClipboardList /> Course Assignments</h1>
         <Button onClick={handleSaveAssignment} className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2 text-white">

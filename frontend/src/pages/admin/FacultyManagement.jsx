@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, PlusCircle, Edit, Trash } from 'lucide-react';
+import BackButton from '@/components/ui/BackButton';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -76,6 +77,9 @@ const FacultyManagement = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <div className="mb-2">
+        <BackButton />
+      </div>
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2"><Users /> Faculty Management</h1>
         <Button onClick={() => { setIsModalOpen(true); setEditingFaculty(null); setFormData({ name: '', email: '', departmentId: '' }); }} className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2 text-white">
@@ -128,13 +132,13 @@ const FacultyManagement = () => {
         <>
           {/* Backdrop with blur + slight dark overlay */}
           <div
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 min-h-screen"
             onClick={() => setIsModalOpen(false)}
           />
 
           {/* Modal content */}
-          <div className="fixed inset-0 flex justify-center items-center z-50">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+          <div className="fixed inset-0 flex justify-center items-center z-50 min-h-screen">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md border-0">
               <h2 className="text-xl font-bold mb-4">
                 {editingFaculty ? 'Edit Faculty' : 'Add Faculty'}
               </h2>

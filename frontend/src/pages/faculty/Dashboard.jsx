@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import BackButton from '@/components/ui/BackButton';
 
 const Dashboard = () => {
     const [assignedCourses, setAssignedCourses] = useState([]);
@@ -57,6 +58,9 @@ const Dashboard = () => {
     return (
         <div className="bg-gray-100 min-h-screen p-8">
             <div className="max-w-7xl mx-auto">
+                <div className="mb-2">
+                    <BackButton />
+                </div>
                 <h1 className="text-3xl font-bold text-gray-800 mb-6">My Assigned Courses</h1>
                 
                 {error && (

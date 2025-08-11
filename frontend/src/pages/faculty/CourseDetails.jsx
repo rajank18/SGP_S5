@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import BackButton from '@/components/ui/BackButton';
 import { useParams } from 'react-router-dom'; // To get the courseId from the URL
 
 const CourseDetailsPage = () => {
@@ -94,6 +95,9 @@ const CourseDetailsPage = () => {
         <div className="bg-gray-100 min-h-screen p-8">
             <div className="max-w-7xl mx-auto">
                 <header className="mb-8">
+                    <div className="mb-2">
+                        <BackButton />
+                    </div>
                     <h1 className="text-3xl font-bold text-gray-800">{course.name}</h1>
                     <p className="text-lg text-gray-600">{course.courseCode}</p>
                 </header>

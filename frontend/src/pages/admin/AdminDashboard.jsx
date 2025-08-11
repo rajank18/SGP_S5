@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Users, ClipboardList, ArrowUp, ArrowDown } from 'lucide-react';
+import BackButton from '@/components/ui/BackButton';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 

@@ -38,8 +38,8 @@ const FacultyModal = ({ isOpen, onClose, onSave, faculty = null, mode = 'add' })
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 min-h-screen">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-2xl">
         <h2 className="text-2xl font-bold mb-4 text-gray-800">
           {mode === 'add' ? 'Add New Faculty' : 'Edit Faculty'}
         </h2>

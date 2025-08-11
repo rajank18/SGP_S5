@@ -1,2 +1,40 @@
 @import "tailwindcss";
 
+@layer base {
+  /* Ensure full viewport coverage */
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow-x: hidden;
+  }
+
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"] {
+    @apply cursor-pointer;
+  }
+
+  button:disabled,
+  [role="button"][aria-disabled="true"],
+  input[type="button"]:disabled,
+  input[type="submit"]:disabled {
+    cursor: not-allowed;
+  }
+
+  /* Remove unwanted borders from modals and popups */
+  .modal-container,
+  .popup-container,
+  [class*="modal"],
+  [class*="popup"] {
+    border: none !important;
+  }
+
+  /* Ensure modal backdrops cover full screen */
+  .fixed.inset-0 {
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
+  }
+}
+

@@ -1,154 +1,87 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import FacultyModal from '../../components/admin/FacultyModal';
+import { Users, PlusCircle, Edit, Trash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 const FacultyManagement = () => {
   const [faculty, setFaculty] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFaculty, setEditingFaculty] = useState(null);
-  const [modalMode, setModalMode] = useState('add');
-  const [error, setError] = useState('');
+  const [formData, setFormData] = useState({ name: '', email: '', departmentId: '' });
   const navigate = useNavigate();
-
+  
+  useEffect(() => { fetchFaculty(); }, []);
+    // Prevent body scroll when modal is open
   useEffect(() => {
-    fetchFaculty();
-  }, []);
+        if (isModalOpen) {
+          document.body.style.overflow = 'hidden'; // Prevent scrolling when modal is open
+        } else {
+          document.body.style.overflow = 'auto';
+        }
+  }, [isModalOpen]);
 
   const fetchFaculty = async () => {
     try {
       const token = localStorage.getItem('prograde_token');
-      const response = await fetch('http://localhost:3001/api/admin/faculty', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch faculty');
-      }
-      
-      const data = await response.json();
-      setFaculty(data);
-    } catch (error) {
-      setError('Error fetching faculty: ' + error.message);
+      const res = await fetch('http://localhost:3001/api/admin/faculty', { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error('Failed to fetch faculty');
+      setFaculty(await res.json());
+    } catch (err) {
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddFaculty = () => {
-    setModalMode('add');
-    setEditingFaculty(null);
-    setIsModalOpen(true);
-  };
-
-  const handleEditFaculty = (facultyMember) => {
-    setModalMode('edit');
-    setEditingFaculty(facultyMember);
-    setIsModalOpen(true);
-  };
-
-  const handleSaveFaculty = async (formData, facultyId = null) => {
+  const handleSaveFaculty = async (e) => {
+    e.preventDefault();
     try {
       const token = localStorage.getItem('prograde_token');
-      const url = facultyId 
-        ? `http://localhost:3001/api/admin/faculty/${facultyId}`
+      const url = editingFaculty
+        ? `http://localhost:3001/api/admin/faculty/${editingFaculty.id}`
         : 'http://localhost:3001/api/admin/faculty';
-      
-      const method = facultyId ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
+      const method = editingFaculty ? 'PUT' : 'POST';
+      const res = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          ...formData,
-          role: 'faculty'
-        })
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ...formData, role: 'faculty' })
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save faculty');
-      }
-
-      // Refresh the faculty list
-      await fetchFaculty();
-      
-    } catch (error) {
-      throw new Error('Failed to save faculty: ' + error.message);
+      if (!res.ok) throw new Error('Failed to save faculty');
+      toast.success(`Faculty ${editingFaculty ? 'updated' : 'added'} successfully`);
+      setIsModalOpen(false);
+      fetchFaculty();
+    } catch (err) {
+      toast.error(err.message);
     }
   };
 
-  const handleDeleteFaculty = async (facultyId) => {
-    if (!window.confirm('Are you sure you want to delete this faculty member? This action cannot be undone.')) {
-      return;
-    }
-
+  const handleDeleteFaculty = async (id) => {
+    if (!window.confirm('Delete this faculty member?')) return;
     try {
       const token = localStorage.getItem('prograde_token');
-      const response = await fetch(`http://localhost:3001/api/admin/faculty/${facultyId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete faculty');
-      }
-
-      // Refresh the faculty list
-      await fetchFaculty();
-      
-    } catch (error) {
-      setError('Error deleting faculty: ' + error.message);
+      const res = await fetch(`http://localhost:3001/api/admin/faculty/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error('Failed to delete faculty');
+      toast.success('Faculty deleted');
+      fetchFaculty();
+    } catch (err) {
+      toast.error(err.message);
     }
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingFaculty(null);
-    setError('');
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl">Loading...</div>
-      </div>
-    );
-  }
+  if (loading) return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/admin/dashboard')}
-            className="text-gray-600 hover:text-gray-800 transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h1 className="text-3xl font-bold text-gray-800">Faculty Management</h1>
-        </div>
-        <Button onClick={handleAddFaculty} className="bg-blue-600 hover:bg-blue-700">
-          + Add New Faculty
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2"><Users /> Faculty Management</h1>
+        <Button onClick={() => { setIsModalOpen(true); setEditingFaculty(null); setFormData({ name: '', email: '', departmentId: '' }); }} className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2 text-white">
+          <PlusCircle /> Add Faculty
         </Button>
       </div>
-
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
 
       <Card>
         <CardHeader>
@@ -156,61 +89,32 @@ const FacultyManagement = () => {
         </CardHeader>
         <CardContent>
           {faculty.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No faculty members found. Add your first faculty member to get started.
-            </div>
+            <p className="text-gray-500 text-center py-8">No faculty members found.</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-hidden">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Department ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+                    {['Name', 'Email', 'Department ID', 'Actions'].map((h) => (
+                      <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {faculty.map((facultyMember) => (
-                    <tr key={facultyMember.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {facultyMember.name}
+                <tbody>
+                  {faculty.map((f) => (
+                    <motion.tr key={f.id} whileHover={{ scale: 1.01 }} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">{f.name}</td>
+                      <td className="px-6 py-4">{f.email}</td>
+                      <td className="px-6 py-4">{f.departmentId || 'N/A'}</td>
+                      <td className="px-6 py-4 flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => { setEditingFaculty(f); setFormData(f); setIsModalOpen(true); }}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleDeleteFaculty(f.id)} className="text-red-600">
+                          <Trash className="h-4 w-4" />
+                        </Button>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {facultyMember.email}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {facultyMember.departmentId || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <Button
-                            onClick={() => handleEditFaculty(facultyMember)}
-                            variant="outline"
-                            size="sm"
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            onClick={() => handleDeleteFaculty(facultyMember.id)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
+                    </motion.tr>
                   ))}
                 </tbody>
               </table>
@@ -219,15 +123,64 @@ const FacultyManagement = () => {
         </CardContent>
       </Card>
 
-      <FacultyModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        onSave={handleSaveFaculty}
-        faculty={editingFaculty}
-        mode={modalMode}
-      />
+      {/* Modal */}
+      {isModalOpen && (
+        <>
+          {/* Backdrop with blur + slight dark overlay */}
+          <div
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+            onClick={() => setIsModalOpen(false)}
+          />
+
+          {/* Modal content */}
+          <div className="fixed inset-0 flex justify-center items-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-bold mb-4">
+                {editingFaculty ? 'Edit Faculty' : 'Add Faculty'}
+              </h2>
+              <form onSubmit={handleSaveFaculty} className="space-y-4">
+                {['name', 'email', 'departmentId'].map((field) => (
+                  <div key={field}>
+                    <label
+                      htmlFor={field}
+                      className="block text-sm font-medium"
+                    >
+                      {field.charAt(0).toUpperCase() + field.slice(1)}
+                    </label>
+                    <input
+                      type="text"
+                      id={field}
+                      value={formData[field] || ''}
+                      onChange={(e) =>
+                        setFormData({ ...formData, [field]: e.target.value })
+                      }
+                      className="w-full border border-gray-300 rounded px-3 py-2"
+                      required={field !== 'departmentId'}
+                    />
+                  </div>
+                ))}
+                <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  onClick={() => setIsModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                >
+                  {editingFaculty ? 'Update' : 'Add'}
+                </Button>
+              </div>
+              </form>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
 
-export default FacultyManagement; 
+export default FacultyManagement;

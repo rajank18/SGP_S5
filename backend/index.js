@@ -12,12 +12,8 @@ import authRoutes from './routes/auth.route.js'; // Make sure you have this file
 import adminRoutes from './routes/admin.route.js';
 import facultyRoutes from './routes/faculty.route.js';
 
-// Import models
-import Course from './models/Course.js';
-import CourseFaculty from './models/CourseFaculty.js';
-import User from './models/User.js';
-
-
+// Import models index to ensure associations are set up
+import './models/index.js';
 
 // Load environment variables
 dotenv.config();
@@ -43,12 +39,7 @@ app.get('/', (req, res) => {
 // --- Server Startup Function ---
 const startServer = async () => {
   try {
-    console.log('Attempting to connect to the database...');
-    await sequelize.authenticate();
-    console.log('✅ Database connection has been established successfully.');
-
-    // It's good practice to avoid using sync in production
-    // await sequelize.sync({ alter: true });
+    console.log('Starting server...');
 
     app.listen(PORT, () => {
       console.log(`🚀 Server is running on http://localhost:${PORT}`);

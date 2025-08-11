@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 const AdminDashboard = () => {
   const [courses, setCourses] = useState([]);
   const [faculty, setFaculty] = useState([]);
+  const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -34,10 +35,31 @@ const AdminDashboard = () => {
       });
       const facultyData = await facultyResponse.json();
       setFaculty(facultyData);
+
+      // Fetch assignments
+      await fetchAssignments();
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAssignments = async () => {
+    try {
+      const token = localStorage.getItem('prograde_token');
+      const response = await fetch('http://localhost:3001/api/admin/course-assignments', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAssignments(data.assignments || []);
+      }
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
     }
   };
 
@@ -62,7 +84,11 @@ const AdminDashboard = () => {
           <CardContent>
             <div className="text-3xl font-bold text-blue-600">{courses.length}</div>
             <p className="text-gray-600">Total Courses</p>
-            <Button className="mt-4 w-full" variant="outline">
+            <Button 
+              className="mt-4 w-full" 
+              variant="outline"
+              onClick={() => navigate('/admin/courses')}
+            >
               Manage Courses
             </Button>
           </CardContent>
@@ -86,20 +112,24 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Quick Actions */}
+        {/* Course Assignments */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-purple-600">Quick Actions</CardTitle>
+            <CardTitle className="text-purple-600">Course Assignments</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <Button className="w-full" variant="outline">
-              Add New Course
-            </Button>
-            <Button className="w-full" variant="outline">
-              Assign Faculty
-            </Button>
-            <Button className="w-full" variant="outline">
-              View Reports
+          <CardContent>
+            <div className="text-center mb-4">
+              <div className="text-2xl font-bold text-purple-600">
+                {assignments.length}
+              </div>
+              <p className="text-sm text-gray-600">Active Assignments</p>
+            </div>
+            <Button 
+              className="w-full" 
+              variant="outline"
+              onClick={() => navigate('/admin/assignments')}
+            >
+              Assign Courses to Faculty
             </Button>
           </CardContent>
         </Card>

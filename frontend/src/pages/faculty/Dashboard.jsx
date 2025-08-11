@@ -1,62 +1,101 @@
-import React from 'react'
-import { useState } from 'react';
-import CoursePopup from '../../models/faculty/CoursePopup';
+import React, { useState, useEffect } from 'react';
 
 const Dashboard = () => {
-    // State to manage whether the popup is open or closed
-    const [isPopupOpen, setIsPopupOpen] = useState(false);
-    
-    // State to hold the list of courses. We'll add some initial data for display.
-    const [courses, setCourses] = useState([
-        { name: 'Advanced Web Development', code: 'IT501', semester: '5', year: 2025 },
-        { name: 'Database Management Systems', code: 'CE402', semester: '4', year: 2025 },
-    ]);
+    const [assignedCourses, setAssignedCourses] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
-    // This function is passed to the popup. It receives the new course data.
-    const handleCreateCourse = (newCourseData) => {
-        console.log("New Course Created:", newCourseData); // For testing
-        // Add the new course to our list of courses
-        setCourses(prevCourses => [...prevCourses, newCourseData]);
-        // Close the popup
-        setIsPopupOpen(false);
+    useEffect(() => {
+        fetchAssignedCourses();
+    }, []);
+
+    const fetchAssignedCourses = async () => {
+        try {
+            const token = localStorage.getItem('prograde_token');
+            console.log('Token found:', token ? 'Yes' : 'No'); // Debug log
+            if (!token) {
+                setError('No authentication token found');
+                setLoading(false);
+                return;
+            }
+
+            const response = await fetch('http://localhost:3001/api/faculty/courses', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Faculty courses response:', data); // Debug log
+                setAssignedCourses(data.courses || []);
+            } else {
+                const errorData = await response.json();
+                console.error('Faculty courses error response:', errorData); // Debug log
+                setError(`Failed to fetch assigned courses: ${errorData.message || 'Unknown error'}`);
+            }
+        } catch (err) {
+            setError('Error fetching courses: ' + err.message);
+        } finally {
+            setLoading(false);
+        }
     };
+
+    if (loading) {
+        return (
+            <div className="bg-gray-100 min-h-screen p-8">
+                <div className="max-w-7xl mx-auto">
+                    <div className="flex items-center justify-center h-64">
+                        <div className="text-lg text-gray-600">Loading your courses...</div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-gray-100 min-h-screen p-8">
             <div className="max-w-7xl mx-auto">
-                <h1 className="text-3xl font-bold text-gray-800 mb-6">My Courses</h1>
+                <h1 className="text-3xl font-bold text-gray-800 mb-6">My Assigned Courses</h1>
                 
-                {/* Grid container for course cards and the create button */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    
-                    {/* Map over the courses and display a card for each */}
-                    {courses.map((course, index) => (
-                        <div key={index} className="bg-white rounded-xl shadow-md p-6 flex flex-col justify-between hover:shadow-lg transition-shadow cursor-pointer">
-                            <div>
-                                <h3 className="text-lg font-bold text-gray-800">{course.name}</h3>
-                                <p className="text-sm text-gray-500 mt-1">{course.code}</p>
-                            </div>
-                            <div className="mt-4">
-                                <span className="text-xs font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                                    Sem {course.semester} - {course.year}
-                                </span>
-                            </div>
+                {error && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+                        {error}
+                    </div>
+                )}
+
+                {assignedCourses.length === 0 ? (
+                    <div className="bg-white rounded-xl shadow-md p-8 text-center">
+                        <div className="text-gray-500 text-lg mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            No courses assigned yet
                         </div>
-                    ))}
-
-                    {/* The "Create Course" button */}
-                    <button 
-                        onClick={() => setIsPopupOpen(true)}
-                        className="border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center text-gray-500 hover:bg-gray-200 hover:border-gray-400 transition-colors h-48 cursor-pointer">
-                        {/* Plus Icon (SVG) */}
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        <span className="mt-2 font-semibold">Create New Course</span>
-                    </button>
-                </div>
+                        <p className="text-gray-600">Courses will appear here once an admin assigns them to you.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {assignedCourses.map((course, index) => (
+                            <div key={course.id || index} className="bg-white rounded-xl shadow-md p-6 flex flex-col justify-between hover:shadow-lg transition-shadow">
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-800">{course.name}</h3>
+                                    <p className="text-sm text-gray-500 mt-1">{course.courseCode}</p>
+                                    {course.semester && (
+                                        <p className="text-sm text-gray-500 mt-1">Semester: {course.semester}</p>
+                                    )}
+                                </div>
+                                <div className="mt-4">
+                                    <span className="text-xs font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                        Assigned Course
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
-
-            {/* Conditionally render the popup */}
-            {isPopupOpen && <CoursePopup onCreateCourse={handleCreateCourse} onClose={() => setIsPopupOpen(false)} />}
         </div>
     );
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import FacultyModal from '../../components/admin/FacultyModal';
+import { useNavigate } from 'react-router-dom';
 
 const FacultyManagement = () => {
   const [faculty, setFaculty] = useState([]);
@@ -10,6 +11,7 @@ const FacultyManagement = () => {
   const [editingFaculty, setEditingFaculty] = useState(null);
   const [modalMode, setModalMode] = useState('add');
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchFaculty();
@@ -126,7 +128,17 @@ const FacultyManagement = () => {
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Faculty Management</h1>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/admin/dashboard')}
+            className="text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="text-3xl font-bold text-gray-800">Faculty Management</h1>
+        </div>
         <Button onClick={handleAddFaculty} className="bg-blue-600 hover:bg-blue-700">
           + Add New Faculty
         </Button>

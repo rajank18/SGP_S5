@@ -14,10 +14,10 @@ export const getAssignedCourses = async (req, res) => {
     const assignments = await CourseFaculty.findAll({ where: { facultyId } });
     const courseIds = assignments.map(a => a.courseId);
     if (!courseIds.length) {
-      return res.json([]);
+      return res.json({ courses: [] });
     }
     const courses = await Course.findAll({ where: { id: courseIds } });
-    res.json(courses);
+    res.json({ courses: courses });
   } catch (err) {
     res.status(500).json({ message: 'Error fetching assigned courses', error: err.message });
   }

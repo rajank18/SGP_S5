@@ -4,16 +4,26 @@ import dotenv from 'dotenv';
 // Load environment variables from .env file
 dotenv.config();
 
-// Initialize Sequelize with credentials from your .env file
+// Initialize Sequelize with credentials from your .env file or default values
 const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASS,
+  process.env.DB_NAME || 'prograde_db',
+  process.env.DB_USER || 'root',
+  process.env.DB_PASS || '',
   {
-    host: process.env.DB_HOST,
+    host: process.env.DB_HOST || 'localhost',
     dialect: 'mysql',
-    logging: false, // Set to console.log to see SQL queries
+    logging: console.log, // Enable logging to see SQL queries and errors
+    port: process.env.DB_PORT || 3306
   }
 );
+
+// Test the connection
+sequelize.authenticate()
+  .then(() => {
+    console.log('✅ Database connection has been established successfully.');
+  })
+  .catch(err => {
+    console.error('❌ Unable to connect to the database:', err);
+  });
 
 export default sequelize;

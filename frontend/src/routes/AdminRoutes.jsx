@@ -3,6 +3,8 @@ import { Route, Routes } from 'react-router-dom'
 import Web from '../layout/Web'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 import FacultyManagement from '../pages/admin/FacultyManagement'
+import CourseManagement from '../pages/admin/CourseManagement'
+import CourseAssignments from '../pages/admin/CourseAssignments'
 
 const AdminRoutes = () => {
   return (
@@ -10,6 +12,8 @@ const AdminRoutes = () => {
       <Route path="" element={<Web/>}>
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="faculty" element={<FacultyManagement />} />
+        <Route path="courses" element={<CourseManagement />} />
+        <Route path="assignments" element={<CourseAssignments />} />
       </Route>
     </Routes>
   );

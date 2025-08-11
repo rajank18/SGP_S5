@@ -1,6 +1,4 @@
-import Course from '../models/Course.js';
-import CourseFaculty from '../models/CourseFaculty.js';
-import User from '../models/User.js';
+import { Course, CourseFaculty, User } from '../models/index.js';
 import bcrypt from 'bcryptjs';
 
 // Create a new course
@@ -40,15 +38,101 @@ export const getCourseById = async (req, res) => {
     }
 };
 
+// --- NEW FUNCTION ---
+// Update a course
+export const updateCourse = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        const course = await Course.findByPk(courseId);
+
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        await course.update(req.body);
+        res.json(course);
+    } catch (err) {
+        res.status(500).json({ message: 'Error updating course', error: err.message });
+    }
+};
+
+// --- NEW FUNCTION ---
+// Delete a course
+export const deleteCourse = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        const course = await Course.findByPk(courseId);
+
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        // Check if course is assigned to any faculty
+        const courseAssignments = await CourseFaculty.findAll({ 
+            where: { courseId } 
+        });
+        
+        if (courseAssignments.length > 0) {
+            return res.status(400).json({ 
+                message: "Cannot delete course. It is currently assigned to faculty. Please remove course assignments first." 
+            });
+        }
+
+        await course.destroy();
+        res.json({ message: 'Course deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ message: 'Error deleting course', error: err.message });
+    }
+};
 
 // Assign faculty to course
 export const assignFaculty = async (req, res) => {
   try {
     const { courseId } = req.params;
     const { facultyId } = req.body;
-    await CourseFaculty.create({ courseId, facultyId });
-    res.status(201).json({ message: 'Faculty assigned to course' });
+    
+    console.log('--- ASSIGN FACULTY REQUEST ---', { courseId, facultyId, body: req.body });
+    
+    // Validate input
+    if (!courseId || !facultyId) {
+      return res.status(400).json({ 
+        message: 'Course ID and Faculty ID are required' 
+      });
+    }
+    
+    // Check if course exists
+    const course = await Course.findByPk(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+    
+    // Check if faculty exists and is actually a faculty member
+    const faculty = await User.findByPk(facultyId);
+    if (!faculty) {
+      return res.status(404).json({ message: 'Faculty member not found' });
+    }
+    if (faculty.role !== 'faculty') {
+      return res.status(400).json({ message: 'User is not a faculty member' });
+    }
+    
+    // Check if assignment already exists
+    const existingAssignment = await CourseFaculty.findOne({ 
+      where: { courseId, facultyId } 
+    });
+    if (existingAssignment) {
+      return res.status(409).json({ message: 'Faculty is already assigned to this course' });
+    }
+    
+    // Create the assignment
+    const assignment = await CourseFaculty.create({ courseId, facultyId });
+    console.log('--- FACULTY ASSIGNED SUCCESSFULLY ---', assignment);
+    
+    res.status(201).json({ 
+      message: 'Faculty assigned to course successfully',
+      assignment: { courseId, facultyId }
+    });
   } catch (err) {
+    console.error('--- ASSIGN FACULTY ERROR ---', err);
     res.status(500).json({ message: 'Error assigning faculty', error: err.message });
   }
 };
@@ -120,7 +204,7 @@ export const createFaculty = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('--- CREATE FACULTY ERROR ---', error);
+    console.error('--- CREATE FACULTY ERROR ---', error.stack); // Log full stack
     res.status(500).json({ 
       message: 'An internal server error occurred during faculty creation.',
       error: error.message 
@@ -184,34 +268,27 @@ export const updateFaculty = async (req, res) => {
 export const deleteFaculty = async (req, res) => {
   try {
     console.log('--- DELETE FACULTY REQUEST ---', req.params);
-    const { facultyId } = req.params;
-    
-    // Validate facultyId
-    if (!facultyId || isNaN(facultyId)) {
+
+    // Convert facultyId to integer for safety
+    const facultyId = parseInt(req.params.facultyId, 10);
+
+    if (isNaN(facultyId)) {
       return res.status(400).json({ message: "Invalid faculty ID." });
     }
-    
+
     // Find the faculty user
     const faculty = await User.findOne({ 
       where: { id: facultyId, role: 'faculty' } 
     });
-    
+
     if (!faculty) {
       return res.status(404).json({ message: "Faculty not found." });
     }
 
     console.log('--- FACULTY FOUND ---', faculty.id, faculty.name);
 
-    // Check if faculty is assigned to any courses
-    const courseAssignments = await CourseFaculty.findAll({ 
-      where: { facultyId } 
-    });
-    
-    if (courseAssignments.length > 0) {
-      return res.status(400).json({ 
-        message: "Cannot delete faculty. They are currently assigned to courses. Please remove course assignments first." 
-      });
-    }
+    // Remove all course assignments for this faculty
+    await CourseFaculty.destroy({ where: { facultyId } });
 
     // Delete the faculty user
     await faculty.destroy();
@@ -223,6 +300,51 @@ export const deleteFaculty = async (req, res) => {
     console.error('--- DELETE FACULTY ERROR ---', error);
     res.status(500).json({ 
       message: 'An internal server error occurred during faculty deletion.',
+      error: error.message 
+    });
+  }
+};
+
+
+// Get all course assignments
+export const getCourseAssignments = async (req, res) => {
+  try {
+    console.log('--- GET COURSE ASSIGNMENTS REQUEST ---');
+    
+    const assignments = await CourseFaculty.findAll({
+      include: [
+        {
+          model: Course,
+          as: 'course',
+          attributes: ['id', 'name', 'courseCode', 'semester', 'year']
+        },
+        {
+          model: User,
+          as: 'faculty',
+          attributes: ['id', 'name', 'email']
+        }
+      ]
+    });
+
+    const formattedAssignments = assignments.map(assignment => ({
+      courseId: assignment.courseId,
+      facultyId: assignment.facultyId,
+      courseName: assignment.course?.name || 'Unknown Course',
+      courseCode: assignment.course?.courseCode || 'N/A',
+      facultyName: assignment.faculty?.name || 'Unknown Faculty',
+      createdAt: assignment.createdAt
+    }));
+
+    console.log('--- COURSE ASSIGNMENTS FETCHED ---', formattedAssignments.length);
+
+    res.json({ 
+      assignments: formattedAssignments 
+    });
+
+  } catch (error) {
+    console.error('--- GET COURSE ASSIGNMENTS ERROR ---', error);
+    res.status(500).json({ 
+      message: 'An internal server error occurred while fetching course assignments.',
       error: error.message 
     });
   }

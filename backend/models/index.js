@@ -20,6 +20,26 @@ User.belongsTo(Department, {
   as: 'department',
 });
 
+// Course and CourseFaculty Relationship
+Course.hasMany(CourseFaculty, {
+  foreignKey: 'courseId',
+  as: 'facultyAssignments',
+});
+CourseFaculty.belongsTo(Course, {
+  foreignKey: 'courseId',
+  as: 'course',
+});
+
+// User (Faculty) and CourseFaculty Relationship
+User.hasMany(CourseFaculty, {
+  foreignKey: 'facultyId',
+  as: 'courseAssignments',
+});
+CourseFaculty.belongsTo(User, {
+  foreignKey: 'facultyId',
+  as: 'faculty',
+});
+
 // Project and ProjectParticipant Relationship
 Project.hasMany(ProjectParticipant, {
   foreignKey: 'projectId',

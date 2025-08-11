@@ -3,12 +3,15 @@ import {
   createCourse,
   getCourses,
   getCourseById,
+  updateCourse,
+  deleteCourse,
   assignFaculty,
   removeFaculty,
   getAllFaculty,
   createFaculty,
   updateFaculty,
-  deleteFaculty
+  deleteFaculty,
+  getCourseAssignments
 } from '../controllers/admin.controller.js';
 import { authenticateAdmin } from '../middleware/adminAuth.js';
 
@@ -29,8 +32,13 @@ router.delete('/faculty/:facultyId', authenticateAdmin, deleteFaculty);
 router.post('/courses', authenticateAdmin, createCourse);
 router.get('/courses', authenticateAdmin, getCourses);
 router.get('/courses/:courseId', authenticateAdmin, getCourseById);
+router.put('/courses/:courseId', authenticateAdmin, updateCourse);
+router.delete('/courses/:courseId', authenticateAdmin, deleteCourse);
 
 // Course-Faculty assignment routes
 router.post('/courses/:courseId/faculty', authenticateAdmin, assignFaculty);
 router.delete('/courses/:courseId/faculty/:facultyId', authenticateAdmin, removeFaculty);
+
+// Course assignments overview
+router.get('/course-assignments', authenticateAdmin, getCourseAssignments);
 export default router;

@@ -305,7 +305,6 @@ export const deleteFaculty = async (req, res) => {
 // Get all course assignments
 export const getCourseAssignments = async (req, res) => {
   try {
-    console.log('--- GET COURSE ASSIGNMENTS REQUEST ---');
     
     const assignments = await CourseFaculty.findAll({
       include: [

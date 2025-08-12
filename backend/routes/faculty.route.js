@@ -1,5 +1,3 @@
-console.log("--- Loading faculty.route.js - Version: LATEST ---");
-
 import express from 'express';
 import multer from 'multer';
 import { getAssignedCourses, uploadProjects, getCourseProjects, uploadGroups } from '../controllers/faculty.controller.js';

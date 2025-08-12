@@ -80,11 +80,9 @@ const CourseDetailsPage = () => {
                 header: true,
                 skipEmptyLines: true,
                 complete: (results) => {
-                    console.log('CSV parsed successfully:', results.data);
                     setCsvPreview(results.data);
                 },
                 error: (error) => {
-                    console.error('CSV parsing error:', error);
                     setCsvPreview([]);
                 }
             });
@@ -97,40 +95,25 @@ const CourseDetailsPage = () => {
         setUploadError('');
         setUploadSuccess('');
         
-        console.log('=== UPLOAD DEBUG START ===');
-        console.log('Upload attempt - File state:', file);
-        console.log('Upload attempt - File name:', file?.name);
-        console.log('Upload attempt - File size:', file?.size);
-        console.log('Upload attempt - CSV Preview length:', csvPreview?.length);
-        console.log('Upload attempt - CSV Preview first row:', csvPreview?.[0]);
-        console.log('Upload attempt - Token exists:', !!token);
-        console.log('Upload attempt - Course ID:', courseId);
-        
         if (!file) {
-            console.log('❌ Upload failed: No file selected');
             setUploadError('Please select a CSV file to upload.');
             return;
         }
         if (!csvPreview || csvPreview.length === 0) {
-            console.log('❌ Upload failed: No CSV data to process');
             setUploadError('No CSV data to process. Please select a valid CSV file.');
             return;
         }
         if (!token) {
-            console.log('❌ Upload failed: No authentication token');
             setUploadError('Authentication error. Please log in again.');
             return;
         }
         
-        console.log('✅ All validations passed, starting upload...');
         setUploading(true);
         
         try {
             // Send the actual CSV file to the backend
             const formData = new FormData();
             formData.append('file', file);
-            
-            console.log('Sending file via FormData:', file.name);
             
             const res = await fetch(`http://localhost:3001/api/faculty/courses/${courseId}/projects/upload`, {
                 method: 'POST',
@@ -141,15 +124,10 @@ const CourseDetailsPage = () => {
                 body: formData,
             });
             
-            console.log('Response status:', res.status);
-            console.log('Response ok:', res.ok);
-            
             const data = await res.json();
-            console.log('Response data:', data);
             
             if (!res.ok) throw new Error(data.message || 'File upload failed.');
             
-            console.log('✅ Upload successful!');
             setUploadSuccess('Project groups created successfully!');
             setFile(null);
             setCsvPreview([]);
@@ -157,17 +135,14 @@ const CourseDetailsPage = () => {
             fetchGroups();
             setTimeout(() => setUploadSuccess(''), 3000);
         } catch (err) {
-            console.error('❌ Upload error:', err);
             setUploadError(err.message);
         } finally {
             setUploading(false);
-            console.log('=== UPLOAD DEBUG END ===');
         }
     };
 
     // Process CSV data to group students by groupNo
     const processCsvData = (csvData) => {
-        console.log('Processing CSV data:', csvData);
         const groups = {};
         
         csvData.forEach(row => {
@@ -181,10 +156,7 @@ const CourseDetailsPage = () => {
             const courseCode = row.courseCode || row.CourseCode;
             const studentEmail = row.studentEmail || row.StudentEmail;
             
-            console.log('Processing row:', { groupNo, groupName, projectTitle, studentEmail });
-            
             if (!groupNo || !studentEmail) {
-                console.log('Skipping row - missing groupNo or studentEmail');
                 return;
             }
             
@@ -209,7 +181,6 @@ const CourseDetailsPage = () => {
             });
         });
         
-        console.log('Final grouped data:', groups);
         return Object.values(groups);
     };
 
@@ -261,66 +232,21 @@ const CourseDetailsPage = () => {
                                             ✓ CSV parsed: {csvPreview.length} rows loaded
                                             <button 
                                                 type="button"
-                                                onClick={() => {
-                                                    console.log('Raw CSV data:', csvPreview);
-                                                    console.log('Processed data:', processCsvData(csvPreview));
-                                                    console.log('First row keys:', Object.keys(csvPreview[0] || {}));
-                                                    console.log('First row values:', csvPreview[0]);
-                                                }}
+                                                onClick={() => {}}
                                                 className="ml-2 text-blue-800 underline"
                                             >
                                                 Debug Data
                                             </button>
                                             <button 
                                                 type="button"
-                                                onClick={() => {
-                                                    console.log('=== STATE DEBUG ===');
-                                                    console.log('File state:', file);
-                                                    console.log('File name:', file?.name);
-                                                    console.log('File size:', file?.size);
-                                                    console.log('CSV Preview length:', csvPreview?.length);
-                                                    console.log('Token exists:', !!token);
-                                                    console.log('Course ID:', courseId);
-                                                }}
+                                                onClick={() => {}}
                                                 className="ml-2 text-red-800 underline"
                                             >
                                                 Check State
                                             </button>
                                             <button 
                                                 type="button"
-                                                onClick={async () => {
-                                                    console.log('=== TEST UPLOAD ===');
-                                                    try {
-                                                        // Send the actual CSV file to the backend
-                                                        const formData = new FormData();
-                                                        formData.append('file', file);
-                                                        
-                                                        console.log('Test - Sending file via FormData:', file.name);
-                                                        
-                                                        const res = await fetch(`http://localhost:3001/api/faculty/courses/${courseId}/projects/upload`, {
-                                                            method: 'POST',
-                                                            headers: { 
-                                                                'Authorization': `Bearer ${token}`
-                                                                // Note: Don't set Content-Type for FormData, let browser set it
-                                                            },
-                                                            body: formData,
-                                                        });
-                                                        
-                                                        console.log('Test - Response status:', res.status);
-                                                        console.log('Test - Response ok:', res.ok);
-                                                        
-                                                        const data = await res.json();
-                                                        console.log('Test - Response data:', data);
-                                                        
-                                                        if (res.ok) {
-                                                            console.log('✅ Test upload successful!');
-                                                        } else {
-                                                            console.log('❌ Test upload failed:', data.message);
-                                                        }
-                                                    } catch (error) {
-                                                        console.error('❌ Test upload error:', error);
-                                                    }
-                                                }}
+                                                onClick={async () => {}}
                                                 className="ml-2 text-green-800 underline"
                                             >
                                                 Test Upload
@@ -375,7 +301,6 @@ const CourseDetailsPage = () => {
                                                 {(() => {
                                                     try {
                                                         const grouped = processCsvData(csvPreview);
-                                                        console.log('Preview grouped data:', grouped);
                                                         return grouped.map((group, idx) => (
                                                             <div key={idx} className="bg-gray-50 rounded-lg p-3 border">
                                                                 <div className="font-semibold text-gray-800">Group {group.groupNo}: {group.groupName}</div>
@@ -392,7 +317,6 @@ const CourseDetailsPage = () => {
                                                             </div>
                                                         ));
                                                     } catch (error) {
-                                                        console.error('Error in preview:', error);
                                                         return <div className="text-red-500">Error processing preview: {error.message}</div>;
                                                     }
                                                 })()}

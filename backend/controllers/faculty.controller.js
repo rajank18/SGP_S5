@@ -95,10 +95,8 @@ export const uploadProjects = async (req, res) => {
         .on('error', reject);
     });
     
-    console.log('CSV parsed results:', results);
     if (results.length > 0) {
-      console.log('First row keys:', Object.keys(results[0]));
-      console.log('First row values:', results[0]);
+      // Parsed CSV sample available in memory if needed for debugging
     }
 
     // Group students by their project using GroupNo
@@ -114,27 +112,12 @@ export const uploadProjects = async (req, res) => {
       const externalGuideName = row.ExternalGuideName || row.externalGuideName;
       const studentEmail = row.StudentEmail || row.studentEmail;
       
-      // Debug: Log what we're getting from each column
-      console.log('Processing row:', {
-        groupNo,
-        groupName,
-        projectTitle,
-        projectDescription,
-        fileUrl,
-        internalGuideEmail,
-        externalGuideName,
-        studentEmail,
-        rawRow: row
-      });
-      
       // Check if we have the minimum required data
       if (!groupNo) {
-        console.log('Skipping row - missing groupNo:', row);
         continue;
       }
       
       if (!studentEmail) {
-        console.log('Skipping row - no valid student email found:', row);
         continue;
       }
       
@@ -164,8 +147,6 @@ export const uploadProjects = async (req, res) => {
         throw new Error(`Course with ID ${courseId} not found.`);
       }
       
-      console.log(`Processing project for course: ${course.name} (${course.courseCode})`);
-      
       // Find the internal guide's user ID from their email
       let internalGuide = null;
       
@@ -183,7 +164,7 @@ export const uploadProjects = async (req, res) => {
         if (!internalGuide) {
           throw new Error(`Could not find internal guide and logged-in user is not faculty`);
         }
-        console.log('Using logged-in faculty as internal guide:', internalGuide.email);
+        // Using logged-in faculty as internal guide
       }
 
       // Create the Project record

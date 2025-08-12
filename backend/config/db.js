@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Initialize Sequelize with credentials from your .env file or default values
+const shouldLogSql = (process.env.SEQUELIZE_LOGGING === 'true');
+
 const sequelize = new Sequelize(
   process.env.DB_NAME || 'prograde_db',
   process.env.DB_USER || 'root',
@@ -12,8 +14,8 @@ const sequelize = new Sequelize(
   {
     host: process.env.DB_HOST || 'localhost',
     dialect: 'mysql',
-    logging: console.log, // Enable logging to see SQL queries and errors
-    port: process.env.DB_PORT || 3306
+    port: process.env.DB_PORT || 3306,
+    logging: shouldLogSql ? (msg) => console.debug(msg) : false,
   }
 );
 

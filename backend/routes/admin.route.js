@@ -11,7 +11,9 @@ import {
   createFaculty,
   updateFaculty,
   deleteFaculty,
-  getCourseAssignments
+  getCourseAssignments,
+  uploadStudents,
+  getAllStudents
 } from '../controllers/admin.controller.js';
 import { authenticateAdmin } from '../middleware/adminAuth.js';
 
@@ -41,4 +43,11 @@ router.delete('/courses/:courseId/faculty/:facultyId', authenticateAdmin, remove
 
 // Course assignments overview
 router.get('/course-assignments', authenticateAdmin, getCourseAssignments);
+
+// Student bulk upload
+router.post('/upload-students', authenticateAdmin, uploadStudents);
+
+// Student management
+router.get('/students', authenticateAdmin, getAllStudents);
+
 export default router;

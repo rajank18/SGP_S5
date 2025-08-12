@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
-<<<<<<< Updated upstream
 import BackButton from '@/components/ui/BackButton';
-=======
 import { useNavigate } from 'react-router-dom';
->>>>>>> Stashed changes
 
 const Dashboard = () => {
     const [assignedCourses, setAssignedCourses] = useState([]);
@@ -18,7 +15,6 @@ const Dashboard = () => {
     const fetchAssignedCourses = async () => {
         try {
             const token = localStorage.getItem('prograde_token');
-            console.log('Token found:', token ? 'Yes' : 'No'); // Debug log
             if (!token) {
                 setError('No authentication token found');
                 setLoading(false);
@@ -34,7 +30,6 @@ const Dashboard = () => {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log('Faculty courses response:', data); // Debug log
                 setAssignedCourses(data.courses || []);
             } else {
                 const errorData = await response.json();
@@ -63,9 +58,7 @@ const Dashboard = () => {
     return (
         <div className="bg-gray-100 min-h-screen p-8">
             <div className="max-w-7xl mx-auto">
-                <div className="mb-2">
-                    <BackButton />
-                </div>
+
                 <h1 className="text-3xl font-bold text-gray-800 mb-6">My Assigned Courses</h1>
                 
                 {error && (

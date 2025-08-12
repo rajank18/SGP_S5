@@ -160,3 +160,144 @@ export const uploadProjects = async (req, res) => {
     fs.unlinkSync(filePath);
   }
 };
+
+// Upload groups via CSV (filtered by logged-in faculty's email)
+export const uploadGroups = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+
+  const filePath = req.file.path;
+  const tokenUserId = req.user?.id;
+  const tokenUserEmail = req.user?.email?.toLowerCase()?.trim();
+
+  if (!tokenUserId || !tokenUserEmail) {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  let createdProjects = 0;
+  let addedParticipants = 0;
+  let skippedRows = 0;
+  let skippedByReason = {
+    internalGuideMismatch: 0,
+    missingFields: 0,
+    courseNotFound: 0,
+    studentNotFound: 0,
+    rowError: 0,
+  };
+
+  // Resolve faculty user definitively (in case token id/email mismatch)
+  let facultyUser = null;
+  try {
+    facultyUser = await User.findOne({ where: { email: tokenUserEmail, role: 'faculty' } });
+    if (!facultyUser) {
+      facultyUser = await User.findOne({ where: { id: tokenUserId, role: 'faculty' } });
+    }
+  } catch (e) {
+    // fallthrough handled below
+  }
+  if (!facultyUser) {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    return res.status(403).json({ message: 'Authenticated user is not a faculty or not found' });
+  }
+
+  const rows = [];
+  try {
+    await new Promise((resolve, reject) => {
+      fs.createReadStream(filePath)
+        .pipe(csv())
+        .on('data', (row) => rows.push(row))
+        .on('end', resolve)
+        .on('error', reject);
+    });
+
+    for (const raw of rows) {
+      try {
+        // Normalize headers expected: groupNo, groupName, projectTitle, projectDescription, fileUrl, internalGuideEmail, externalGuideName, courseCode, studentEmail
+        const groupNo = (raw.groupNo ?? raw.GroupNo ?? '').toString().trim();
+        const groupName = (raw.groupName ?? raw.GroupName ?? '').toString().trim() || null;
+        const projectTitle = (raw.projectTitle ?? raw.ProjectTitle ?? '').toString().trim() || null;
+        const projectDescription = (raw.projectDescription ?? raw.ProjectDescription ?? '').toString().trim() || null;
+        const fileUrl = (raw.fileUrl ?? raw.FileUrl ?? '').toString().trim() || null;
+        const internalGuideEmail = (raw.internalGuideEmail ?? raw.InternalGuideEmail ?? '').toString().toLowerCase().trim();
+        const externalGuideName = (raw.externalGuideName ?? raw.ExternalGuideName ?? '').toString().trim() || null;
+        const courseCode = (raw.courseCode ?? raw.CourseCode ?? '').toString().trim();
+        const studentEmail = (raw.studentEmail ?? raw.StudentEmail ?? '').toString().toLowerCase().trim();
+
+        // Basic validation
+        if (!groupNo || !courseCode || !studentEmail) {
+          skippedRows++;
+          skippedByReason.missingFields++;
+          continue;
+        }
+
+        // Filter: only rows where internalGuideEmail matches logged-in faculty email
+        const facultyEmailNorm = (facultyUser.email || '').toLowerCase().trim();
+        if (!internalGuideEmail || internalGuideEmail !== facultyEmailNorm) {
+          skippedRows++;
+          skippedByReason.internalGuideMismatch++;
+          continue;
+        }
+
+        // Course lookup by courseCode
+        const course = await Course.findOne({ where: { courseCode } });
+        if (!course) {
+          skippedRows++;
+          skippedByReason.courseNotFound++;
+          continue;
+        }
+
+        // Student lookup by email
+        const student = await User.findOne({ where: { email: studentEmail, role: 'student' } });
+        if (!student) {
+          skippedRows++;
+          skippedByReason.studentNotFound++;
+          continue;
+        }
+
+        // Find or create project by (groupNo, courseId, internalGuideId)
+        const [project, wasCreated] = await Project.findOrCreate({
+          where: {
+            groupNo: Number(groupNo),
+            courseId: course.id,
+            internalGuideId: facultyUser.id,
+          },
+          defaults: {
+            groupName: groupName || null,
+            title: projectTitle || null,
+            description: projectDescription || null,
+            fileUrl: fileUrl || null,
+            externalGuideName: externalGuideName || null,
+            courseId: course.id,
+            internalGuideId: facultyUser.id,
+            groupNo: Number(groupNo),
+          },
+        });
+
+        if (wasCreated) {
+          createdProjects++;
+        }
+
+        // Ensure participant exists
+        const existingParticipant = await ProjectParticipant.findOne({
+          where: { projectId: project.id, studentId: student.id },
+        });
+        if (!existingParticipant) {
+          await ProjectParticipant.create({ projectId: project.id, studentId: student.id });
+          addedParticipants++;
+        }
+      } catch (rowErr) {
+        // Skip problematic row but continue processing
+        skippedRows++;
+        skippedByReason.rowError++;
+      }
+    }
+
+    res.json({ createdProjects, addedParticipants, skippedRows, skippedByReason });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to process CSV', error: err.message });
+  } finally {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  }
+};

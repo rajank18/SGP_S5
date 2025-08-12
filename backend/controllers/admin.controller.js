@@ -1,5 +1,8 @@
 import { Course, CourseFaculty, User } from '../models/index.js';
 import bcrypt from 'bcryptjs';
+import multer from 'multer';
+import csv from 'csv-parser';
+import fs from 'fs';
 
 // Create a new course
 export const createCourse = async (req, res) => {
@@ -91,7 +94,6 @@ export const assignFaculty = async (req, res) => {
     const { courseId } = req.params;
     const { facultyId } = req.body;
     
-    console.log('--- ASSIGN FACULTY REQUEST ---', { courseId, facultyId, body: req.body });
     
     // Validate input
     if (!courseId || !facultyId) {
@@ -125,7 +127,6 @@ export const assignFaculty = async (req, res) => {
     
     // Create the assignment
     const assignment = await CourseFaculty.create({ courseId, facultyId });
-    console.log('--- FACULTY ASSIGNED SUCCESSFULLY ---', assignment);
     
     res.status(201).json({ 
       message: 'Faculty assigned to course successfully',
@@ -161,7 +162,6 @@ export const getAllFaculty = async (req, res) => {
 // Create new faculty
 export const createFaculty = async (req, res) => {
   try {
-    console.log('--- CREATE FACULTY REQUEST ---', req.body);
     const { name, email, password, departmentId } = req.body;
     
     // Validate required fields
@@ -190,7 +190,6 @@ export const createFaculty = async (req, res) => {
       departmentId: departmentId || null
     });
 
-    console.log('--- FACULTY CREATED SUCCESSFULLY ---', newFaculty.id);
 
     res.status(201).json({
       message: "Faculty created successfully!",
@@ -267,7 +266,6 @@ export const updateFaculty = async (req, res) => {
 // Delete faculty
 export const deleteFaculty = async (req, res) => {
   try {
-    console.log('--- DELETE FACULTY REQUEST ---', req.params);
 
     // Convert facultyId to integer for safety
     const facultyId = parseInt(req.params.facultyId, 10);
@@ -285,14 +283,12 @@ export const deleteFaculty = async (req, res) => {
       return res.status(404).json({ message: "Faculty not found." });
     }
 
-    console.log('--- FACULTY FOUND ---', faculty.id, faculty.name);
 
     // Remove all course assignments for this faculty
     await CourseFaculty.destroy({ where: { facultyId } });
 
     // Delete the faculty user
     await faculty.destroy();
-    console.log('--- FACULTY DELETED SUCCESSFULLY ---', facultyId);
 
     res.json({ message: "Faculty deleted successfully!" });
 
@@ -335,7 +331,6 @@ export const getCourseAssignments = async (req, res) => {
       createdAt: assignment.createdAt
     }));
 
-    console.log('--- COURSE ASSIGNMENTS FETCHED ---', formattedAssignments.length);
 
     res.json({ 
       assignments: formattedAssignments 
@@ -347,5 +342,75 @@ export const getCourseAssignments = async (req, res) => {
       message: 'An internal server error occurred while fetching course assignments.',
       error: error.message 
     });
+  }
+};
+
+// Student bulk upload
+export const uploadStudents = async (req, res) => {
+  // Use multer to handle file upload
+  const upload = multer({ dest: 'uploads/' }).single('file');
+  upload(req, res, async function (err) {
+    if (err) {
+      return res.status(400).json({ message: 'File upload error', error: err.message });
+    }
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+    const filePath = req.file.path;
+    const results = [];
+    const skippedEmails = [];
+    let insertedCount = 0;
+    let skippedCount = 0;
+    try {
+      await new Promise((resolve, reject) => {
+        fs.createReadStream(filePath)
+          .pipe(csv())
+          .on('data', (row) => results.push(row))
+          .on('end', resolve)
+          .on('error', reject);
+      });
+      for (const row of results) {
+        const { name, email, password, departmentId } = row;
+        if (!name || !email || !password) {
+          skippedCount++;
+          skippedEmails.push(email || '(missing email)');
+          continue;
+        }
+        const existing = await User.findOne({ where: { email } });
+        if (existing) {
+          skippedCount++;
+          skippedEmails.push(email);
+          continue;
+        }
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        await User.create({
+          name,
+          email,
+          password: hashedPassword,
+          role: 'student',
+          departmentId: departmentId || null
+        });
+        insertedCount++;
+      }
+      fs.unlinkSync(filePath); // Clean up uploaded file
+      res.json({ insertedCount, skippedCount, skippedEmails });
+    } catch (error) {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      res.status(500).json({ message: 'Error processing CSV', error: error.message });
+    }
+  });
+};
+
+// Get all students
+export const getAllStudents = async (req, res) => {
+  try {
+    const students = await User.findAll({
+      where: { role: 'student' },
+      attributes: ['id', 'name', 'email', 'departmentId']
+    });
+    res.json(students);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching students', error: err.message });
   }
 };

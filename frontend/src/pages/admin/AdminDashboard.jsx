@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Users, ClipboardList, ArrowUp, ArrowDown } from 'lucide-react';
+import { BookOpen, Users, ClipboardList, ArrowUp, ArrowDown, UserPlus } from 'lucide-react';
 import BackButton from '@/components/ui/BackButton';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -70,6 +70,7 @@ const AdminDashboard = () => {
         <StatCard title="Courses" value={courses.length} icon={BookOpen} color="from-blue-500 to-blue-600" onClick={() => navigate('/admin/courses')} />
         <StatCard title="Faculty" value={faculty.length} icon={Users} color="from-green-500 to-green-600" onClick={() => navigate('/admin/faculty')} />
         <StatCard title="Assignments" value={assignments.length} icon={ClipboardList} color="from-purple-500 to-purple-600" onClick={() => navigate('/admin/assignments')} />
+        <StatCard title="Students" value={"Bulk Upload"} icon={UserPlus} color="from-pink-500 to-pink-600" onClick={() => navigate('/admin/students')} />
       </div>
 
       {/* Recent Courses */}

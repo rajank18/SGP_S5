@@ -12,7 +12,7 @@ const FacultyManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFaculty, setEditingFaculty] = useState(null);
-  const [formData, setFormData] = useState({ name: '', email: '', departmentId: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', departmentId: '', password: '' });
   const navigate = useNavigate();
   
   useEffect(() => { fetchFaculty(); }, []);
@@ -82,7 +82,7 @@ const FacultyManagement = () => {
       </div>
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2"><Users /> Faculty Management</h1>
-        <Button onClick={() => { setIsModalOpen(true); setEditingFaculty(null); setFormData({ name: '', email: '', departmentId: '' }); }} className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2 text-white">
+        <Button onClick={() => { setIsModalOpen(true); setEditingFaculty(null); setFormData({ name: '', email: '', departmentId: '', password: '' }); }} className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2 text-white">
           <PlusCircle /> Add Faculty
         </Button>
       </div>
@@ -111,7 +111,7 @@ const FacultyManagement = () => {
                       <td className="px-6 py-4">{f.email}</td>
                       <td className="px-6 py-4">{f.departmentId || 'N/A'}</td>
                       <td className="px-6 py-4 flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => { setEditingFaculty(f); setFormData(f); setIsModalOpen(true); }}>
+                        <Button variant="outline" size="sm" onClick={() => { setEditingFaculty(f); setFormData({ ...f, password: '' }); setIsModalOpen(true); }}>
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => handleDeleteFaculty(f.id)} className="text-red-600">
@@ -145,24 +145,32 @@ const FacultyManagement = () => {
               <form onSubmit={handleSaveFaculty} className="space-y-4">
                 {['name', 'email', 'departmentId'].map((field) => (
                   <div key={field}>
-                    <label
-                      htmlFor={field}
-                      className="block text-sm font-medium"
-                    >
+                    <label htmlFor={field} className="block text-sm font-medium">
                       {field.charAt(0).toUpperCase() + field.slice(1)}
                     </label>
                     <input
-                      type="text"
+                      type={field === 'email' ? 'email' : 'text'}
                       id={field}
                       value={formData[field] || ''}
-                      onChange={(e) =>
-                        setFormData({ ...formData, [field]: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
                       className="w-full border border-gray-300 rounded px-3 py-2"
                       required={field !== 'departmentId'}
                     />
                   </div>
                 ))}
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium">
+                    Password {editingFaculty ? <span className="text-gray-500 text-xs">(leave blank to keep unchanged)</span> : ''}
+                  </label>
+                  <input
+                    type="password"
+                    id="password"
+                    value={formData.password || ''}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    required={!editingFaculty}
+                  />
+                </div>
                 <div className="flex gap-3 pt-4">
                 <Button
                   type="button"

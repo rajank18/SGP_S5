@@ -58,6 +58,26 @@ User.hasMany(ProjectParticipant, {
   foreignKey: 'studentId',
 });
 
+// Project and User (Faculty as internal guide) Relationship
+Project.belongsTo(User, {
+  foreignKey: 'internalGuideId',
+  as: 'internalGuide',
+});
+User.hasMany(Project, {
+  foreignKey: 'internalGuideId',
+  as: 'guidedProjects',
+});
+
+// Project and Course Relationship
+Course.hasMany(Project, {
+  foreignKey: 'courseId',
+  as: 'projects',
+});
+Project.belongsTo(Course, {
+  foreignKey: 'courseId',
+  as: 'course',
+});
+
 // --- Add other relationships here as needed ---
 // Example:
 // Course.hasMany(Project, { foreignKey: 'courseId' });

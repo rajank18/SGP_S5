@@ -11,6 +11,7 @@ dotenv.config();
 import authRoutes from './routes/auth.route.js'; // Make sure you have this file
 import adminRoutes from './routes/admin.route.js';
 import facultyRoutes from './routes/faculty.route.js';
+import studentRoutes from './routes/student.route.js';
 
 // Import models index to ensure associations are set up
 import './models/index.js';
@@ -30,6 +31,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/faculty', facultyRoutes);
+app.use('/api/student', studentRoutes);
 
 // Health check route
 app.get('/', (req, res) => {

@@ -69,18 +69,24 @@ const CourseDetailsPage = () => {
 
     // CSV file change handler
     const handleFileChange = (e) => {
-        setFile(e.target.files[0]);
+        const selectedFile = e.target.files[0];
+        setFile(selectedFile);
         setUploadError('');
         setUploadSuccess('');
         setCsvPreview([]);
-        if (e.target.files[0]) {
-            Papa.parse(e.target.files[0], {
+        
+        if (selectedFile) {
+            Papa.parse(selectedFile, {
                 header: true,
                 skipEmptyLines: true,
                 complete: (results) => {
+                    console.log('CSV parsed successfully:', results.data);
                     setCsvPreview(results.data);
                 },
-                error: () => setCsvPreview([])
+                error: (error) => {
+                    console.error('CSV parsing error:', error);
+                    setCsvPreview([]);
+                }
             });
         }
     };
@@ -90,44 +96,121 @@ const CourseDetailsPage = () => {
         e.preventDefault();
         setUploadError('');
         setUploadSuccess('');
+        
+        console.log('=== UPLOAD DEBUG START ===');
+        console.log('Upload attempt - File state:', file);
+        console.log('Upload attempt - File name:', file?.name);
+        console.log('Upload attempt - File size:', file?.size);
+        console.log('Upload attempt - CSV Preview length:', csvPreview?.length);
+        console.log('Upload attempt - CSV Preview first row:', csvPreview?.[0]);
+        console.log('Upload attempt - Token exists:', !!token);
+        console.log('Upload attempt - Course ID:', courseId);
+        
         if (!file) {
+            console.log('❌ Upload failed: No file selected');
             setUploadError('Please select a CSV file to upload.');
             return;
         }
+        if (!csvPreview || csvPreview.length === 0) {
+            console.log('❌ Upload failed: No CSV data to process');
+            setUploadError('No CSV data to process. Please select a valid CSV file.');
+            return;
+        }
         if (!token) {
+            console.log('❌ Upload failed: No authentication token');
             setUploadError('Authentication error. Please log in again.');
             return;
         }
+        
+        console.log('✅ All validations passed, starting upload...');
         setUploading(true);
+        
         try {
+            // Send the actual CSV file to the backend
             const formData = new FormData();
             formData.append('file', file);
-            const res = await fetch(`http://localhost:3001/api/faculty/upload-groups`, {
+            
+            console.log('Sending file via FormData:', file.name);
+            
+            const res = await fetch(`http://localhost:3001/api/faculty/courses/${courseId}/projects/upload`, {
                 method: 'POST',
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { 
+                    'Authorization': `Bearer ${token}`
+                    // Note: Don't set Content-Type for FormData, let browser set it
+                },
                 body: formData,
             });
+            
+            console.log('Response status:', res.status);
+            console.log('Response ok:', res.ok);
+            
             const data = await res.json();
+            console.log('Response data:', data);
+            
             if (!res.ok) throw new Error(data.message || 'File upload failed.');
-            const { createdProjects = 0, addedParticipants = 0, skippedRows = 0, skippedByReason = {} } = data || {};
-            const reasonText = Object.entries(skippedByReason)
-                .filter(([, v]) => v > 0)
-                .map(([k, v]) => `${k}: ${v}`)
-                .join(', ');
-            setUploadSuccess(
-                `Created ${createdProjects} project(s), added ${addedParticipants} participant(s), skipped ${skippedRows} row(s)` +
-                (reasonText ? ` (${reasonText})` : '')
-            );
+            
+            console.log('✅ Upload successful!');
+            setUploadSuccess('Project groups created successfully!');
             setFile(null);
             setCsvPreview([]);
             if (fileInputRef.current) fileInputRef.current.value = '';
             fetchGroups();
             setTimeout(() => setUploadSuccess(''), 3000);
         } catch (err) {
+            console.error('❌ Upload error:', err);
             setUploadError(err.message);
         } finally {
             setUploading(false);
+            console.log('=== UPLOAD DEBUG END ===');
         }
+    };
+
+    // Process CSV data to group students by groupNo
+    const processCsvData = (csvData) => {
+        console.log('Processing CSV data:', csvData);
+        const groups = {};
+        
+        csvData.forEach(row => {
+            const groupNo = row.groupNo || row.GroupNo;
+            const groupName = row.groupName || row.GroupName;
+            const projectTitle = row.projectTitle || row.ProjectTitle;
+            const projectDescription = row.projectDescription || row.ProjectDescription;
+            const fileUrl = row.fileUrl || row.FileUrl;
+            const internalGuideEmail = row.internalGuideEmail || row.InternalGuideEmail;
+            const externalGuideName = row.externalGuideName || row.ExternalGuideName;
+            const courseCode = row.courseCode || row.CourseCode;
+            const studentEmail = row.studentEmail || row.StudentEmail;
+            
+            console.log('Processing row:', { groupNo, groupName, projectTitle, studentEmail });
+            
+            if (!groupNo || !studentEmail) {
+                console.log('Skipping row - missing groupNo or studentEmail');
+                return;
+            }
+            
+            if (!groups[groupNo]) {
+                groups[groupNo] = {
+                    groupNo: parseInt(groupNo),
+                    groupName: groupName,
+                    projectTitle: projectTitle,
+                    projectDescription: projectDescription,
+                    fileUrl: fileUrl,
+                    internalGuideEmail: internalGuideEmail,
+                    externalGuideName: externalGuideName,
+                    courseCode: courseCode,
+                    students: []
+                };
+            }
+            
+            // Add student to the group
+            groups[groupNo].students.push({
+                email: studentEmail,
+                courseCode: courseCode
+            });
+        });
+        
+        console.log('Final grouped data:', groups);
+        return Object.values(groups);
     };
 
     if (loadingCourse) {
@@ -153,8 +236,8 @@ const CourseDetailsPage = () => {
                         <div className="bg-white rounded-xl shadow p-6 w-full max-w-2xl">
                             <h3 className="text-xl font-semibold text-gray-800">Upload Project Groups CSV</h3>
                             <p className="text-sm text-gray-500 mt-1">
-                                CSV columns: <b>groupNo</b>, <b>groupName</b>, <b>projectTitle</b>, <b>projectDescription</b>, <b>fileUrl</b>, <b>internalGuideEmail</b>, <b>externalGuideName</b>, <b>courseCode</b>, <b>studentEmail</b><br/>
-                                Each row should represent a student in a group.
+                                CSV columns: <b>groupNo</b>, <b>groupName</b>, <b>projectTitle</b>, <b>projectDescription</b>, <b>fileUrl</b>, <b>internalGuideEmail</b>, <b>externalGuideName</b>, <b>studentEmail</b><br/>
+                                <strong>Important:</strong> Each row represents one student. Students with the same <b>groupNo</b> will be grouped together automatically. <strong>Note:</strong> Course code is automatically detected from the course you're uploading to.
                             </p>
                             <form onSubmit={handleUpload} className="mt-4 space-y-4">
                                 {/* Single upload to /api/faculty/upload-groups */}
@@ -168,40 +251,153 @@ const CourseDetailsPage = () => {
                                         ref={fileInputRef}
                                         className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                                     />
+                                    {file && (
+                                        <div className="mt-2 text-sm text-green-600">
+                                            ✓ File selected: {file.name} ({Math.round(file.size / 1024)} KB)
+                                        </div>
+                                    )}
+                                    {csvPreview.length > 0 && (
+                                        <div className="mt-2 text-sm text-blue-600">
+                                            ✓ CSV parsed: {csvPreview.length} rows loaded
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    console.log('Raw CSV data:', csvPreview);
+                                                    console.log('Processed data:', processCsvData(csvPreview));
+                                                    console.log('First row keys:', Object.keys(csvPreview[0] || {}));
+                                                    console.log('First row values:', csvPreview[0]);
+                                                }}
+                                                className="ml-2 text-blue-800 underline"
+                                            >
+                                                Debug Data
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    console.log('=== STATE DEBUG ===');
+                                                    console.log('File state:', file);
+                                                    console.log('File name:', file?.name);
+                                                    console.log('File size:', file?.size);
+                                                    console.log('CSV Preview length:', csvPreview?.length);
+                                                    console.log('Token exists:', !!token);
+                                                    console.log('Course ID:', courseId);
+                                                }}
+                                                className="ml-2 text-red-800 underline"
+                                            >
+                                                Check State
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                onClick={async () => {
+                                                    console.log('=== TEST UPLOAD ===');
+                                                    try {
+                                                        // Send the actual CSV file to the backend
+                                                        const formData = new FormData();
+                                                        formData.append('file', file);
+                                                        
+                                                        console.log('Test - Sending file via FormData:', file.name);
+                                                        
+                                                        const res = await fetch(`http://localhost:3001/api/faculty/courses/${courseId}/projects/upload`, {
+                                                            method: 'POST',
+                                                            headers: { 
+                                                                'Authorization': `Bearer ${token}`
+                                                                // Note: Don't set Content-Type for FormData, let browser set it
+                                                            },
+                                                            body: formData,
+                                                        });
+                                                        
+                                                        console.log('Test - Response status:', res.status);
+                                                        console.log('Test - Response ok:', res.ok);
+                                                        
+                                                        const data = await res.json();
+                                                        console.log('Test - Response data:', data);
+                                                        
+                                                        if (res.ok) {
+                                                            console.log('✅ Test upload successful!');
+                                                        } else {
+                                                            console.log('❌ Test upload failed:', data.message);
+                                                        }
+                                                    } catch (error) {
+                                                        console.error('❌ Test upload error:', error);
+                                                    }
+                                                }}
+                                                className="ml-2 text-green-800 underline"
+                                            >
+                                                Test Upload
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                                 {/* CSV Preview Table */}
                                 {csvPreview.length > 0 && (
-                                    <div className="overflow-x-auto border rounded mb-2">
-                                        <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                            <thead className="bg-gray-50">
-                                                <tr>
-                                                    <th className="px-4 py-2">Group No</th>
-                                                    <th className="px-4 py-2">Group Name</th>
-                                                    <th className="px-4 py-2">Project Title</th>
-                                                    <th className="px-4 py-2">Project Description</th>
-                                                    <th className="px-4 py-2">File URL</th>
-                                                    <th className="px-4 py-2">Internal Guide Email</th>
-                                                    <th className="px-4 py-2">External Guide Name</th>
-                                                    <th className="px-4 py-2">Course Code</th>
-                                                    <th className="px-4 py-2">Student Email</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {csvPreview.map((row, idx) => (
-                                                    <tr key={idx} className="hover:bg-gray-50">
-                                                        <td className="px-4 py-2">{row.groupNo || row.GroupNo}</td>
-                                                        <td className="px-4 py-2">{row.groupName || row.GroupName}</td>
-                                                        <td className="px-4 py-2">{row.projectTitle || row.ProjectTitle}</td>
-                                                        <td className="px-4 py-2">{row.projectDescription || row.ProjectDescription}</td>
-                                                        <td className="px-4 py-2">{row.fileUrl || row.FileUrl}</td>
-                                                        <td className="px-4 py-2">{row.internalGuideEmail || row.InternalGuideEmail}</td>
-                                                        <td className="px-4 py-2">{row.externalGuideName || row.ExternalGuideName}</td>
-                                                        <td className="px-4 py-2">{row.courseCode || row.CourseCode}</td>
-                                                        <td className="px-4 py-2">{row.studentEmail || row.StudentEmail}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                    <div className="space-y-4">
+                                        {/* Raw CSV Data */}
+                                        <div>
+                                            <h4 className="font-medium text-gray-700 mb-2">Raw CSV Data:</h4>
+                                            <div className="overflow-x-auto border rounded">
+                                                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                                                    <thead className="bg-gray-50">
+                                                        <tr>
+                                                            <th className="px-4 py-2">Group No</th>
+                                                            <th className="px-4 py-2">Group Name</th>
+                                                            <th className="px-4 py-2">Project Title</th>
+                                                            <th className="px-4 py-2">Project Description</th>
+                                                            <th className="px-4 py-2">File URL</th>
+                                                            <th className="px-4 py-2">Internal Guide Email</th>
+                                                            <th className="px-4 py-2">External Guide Name</th>
+                                                            <th className="px-4 py-2">Course Code</th>
+                                                            <th className="px-4 py-2">Student Email</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {csvPreview.map((row, idx) => (
+                                                            <tr key={idx} className="hover:bg-gray-50">
+                                                                <td className="px-4 py-2">{row.groupNo || row.GroupNo}</td>
+                                                                <td className="px-4 py-2">{row.groupName || row.GroupName}</td>
+                                                                <td className="px-4 py-2">{row.projectTitle || row.ProjectTitle}</td>
+                                                                <td className="px-4 py-2">{row.projectDescription || row.ProjectDescription}</td>
+                                                                <td className="px-4 py-2">{row.fileUrl || row.FileUrl}</td>
+                                                                <td className="px-4 py-2">{row.internalGuideEmail || row.InternalGuideEmail}</td>
+                                                                <td className="px-4 py-2">{row.externalGuideName || row.ExternalGuideName}</td>
+                                                                <td className="px-4 py-2">{row.courseCode || row.CourseCode}</td>
+                                                                <td className="px-4 py-2">{row.studentEmail || row.StudentEmail}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Grouped Data Preview */}
+                                        <div>
+                                            <h4 className="font-medium text-gray-700 mb-2">How data will be grouped:</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {(() => {
+                                                    try {
+                                                        const grouped = processCsvData(csvPreview);
+                                                        console.log('Preview grouped data:', grouped);
+                                                        return grouped.map((group, idx) => (
+                                                            <div key={idx} className="bg-gray-50 rounded-lg p-3 border">
+                                                                <div className="font-semibold text-gray-800">Group {group.groupNo}: {group.groupName}</div>
+                                                                <div className="text-sm text-gray-600 mb-2">Project: {group.projectTitle}</div>
+                                                                <div className="text-sm text-gray-600 mb-2">External Guide: {group.externalGuideName}</div>
+                                                                <div className="text-sm text-gray-700">
+                                                                    <span className="font-medium">Students ({group.students.length}):</span>
+                                                                    <ul className="list-disc ml-4 mt-1">
+                                                                        {group.students.map((student, i) => (
+                                                                            <li key={i}>{student.email}</li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            </div>
+                                                        ));
+                                                    } catch (error) {
+                                                        console.error('Error in preview:', error);
+                                                        return <div className="text-red-500">Error processing preview: {error.message}</div>;
+                                                    }
+                                                })()}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                                 <div className="flex items-center justify-between">

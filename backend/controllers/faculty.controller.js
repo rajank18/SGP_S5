@@ -94,33 +94,96 @@ export const uploadProjects = async (req, res) => {
         .on('end', resolve)
         .on('error', reject);
     });
+    
+    console.log('CSV parsed results:', results);
+    if (results.length > 0) {
+      console.log('First row keys:', Object.keys(results[0]));
+      console.log('First row values:', results[0]);
+    }
 
     // Group students by their project using GroupNo
     const projectsMap = new Map();
     for (const row of results) {
-      const groupNo = row.GroupNo;
+      // Handle both uppercase and lowercase column names for your CSV structure
+      const groupNo = row.GroupNo || row.groupNo;
+      const groupName = row.GroupName || row.groupName;
+      const projectTitle = row.ProjectTitle || row.projectTitle;
+      const projectDescription = row.ProjectDescription || row.projectDescription;
+      const fileUrl = row.FileUrl || row.fileUrl;
+      const internalGuideEmail = row.InternalGuideEmail || row.internalGuideEmail;
+      const externalGuideName = row.ExternalGuideName || row.externalGuideName;
+      const studentEmail = row.StudentEmail || row.studentEmail;
+      
+      // Debug: Log what we're getting from each column
+      console.log('Processing row:', {
+        groupNo,
+        groupName,
+        projectTitle,
+        projectDescription,
+        fileUrl,
+        internalGuideEmail,
+        externalGuideName,
+        studentEmail,
+        rawRow: row
+      });
+      
+      // Check if we have the minimum required data
+      if (!groupNo) {
+        console.log('Skipping row - missing groupNo:', row);
+        continue;
+      }
+      
+      if (!studentEmail) {
+        console.log('Skipping row - no valid student email found:', row);
+        continue;
+      }
+      
       if (!projectsMap.has(groupNo)) {
         projectsMap.set(groupNo, {
           details: {
-            groupNo: row.GroupNo,
-            groupName: row.GroupName,
-            title: row.ProjectTitle,
-            internalGuideEmail: row.InternalGuideEmail,
-            externalGuideName: row.ExternalGuideName,
+            groupNo: groupNo,
+            groupName: groupName,
+            title: projectTitle,
+            description: projectDescription,
+            fileUrl: fileUrl,
+            internalGuideEmail: internalGuideEmail,
+            externalGuideName: externalGuideName,
           },
           students: [],
         });
       }
-      // Assuming the CSV has a column 'StudentEmail'
-      projectsMap.get(groupNo).students.push({ studentEmail: row.StudentEmail });
+      // Add student to the group
+      projectsMap.get(groupNo).students.push({ studentEmail: studentEmail });
     }
 
     // Process each project group within the transaction
     for (const projectData of projectsMap.values()) {
+      // Get the course details from the database
+      const course = await Course.findByPk(courseId);
+      if (!course) {
+        throw new Error(`Course with ID ${courseId} not found.`);
+      }
+      
+      console.log(`Processing project for course: ${course.name} (${course.courseCode})`);
+      
       // Find the internal guide's user ID from their email
-      const internalGuide = await User.findOne({ where: { email: projectData.details.internalGuideEmail, role: 'faculty' } });
+      let internalGuide = null;
+      
+      if (projectData.details.internalGuideEmail && projectData.details.internalGuideEmail.includes('@')) {
+        // If it's an email, search by email
+        internalGuide = await User.findOne({ where: { email: projectData.details.internalGuideEmail, role: 'faculty' } });
+      } else {
+        // If it's a name, search by name
+        internalGuide = await User.findOne({ where: { name: projectData.details.internalGuideEmail, role: 'faculty' } });
+      }
+      
       if (!internalGuide) {
-        throw new Error(`Faculty guide with email ${projectData.details.internalGuideEmail} not found.`);
+        // Use the logged-in faculty as the internal guide
+        internalGuide = await User.findOne({ where: { id: req.user.id, role: 'faculty' } });
+        if (!internalGuide) {
+          throw new Error(`Could not find internal guide and logged-in user is not faculty`);
+        }
+        console.log('Using logged-in faculty as internal guide:', internalGuide.email);
       }
 
       // Create the Project record
@@ -128,6 +191,8 @@ export const uploadProjects = async (req, res) => {
         groupNo: projectData.details.groupNo,
         groupName: projectData.details.groupName,
         title: projectData.details.title,
+        description: projectData.details.description,
+        fileUrl: projectData.details.fileUrl,
         internalGuideId: internalGuide.id,
         externalGuideName: projectData.details.externalGuideName,
         courseId: courseId,

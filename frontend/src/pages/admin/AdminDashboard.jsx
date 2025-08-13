@@ -121,8 +121,11 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {courses.slice(0, 5).map((course) => (
-                      <tr key={course.id} className="bg-white border-b hover:bg-gray-50">
+                    {courses.slice(0, 5).map((course, index) => (
+                      <tr 
+                        key={course.id} 
+                        className={`${index % 2 === 0 ? 'bg-white' : 'bg-blue-50'} hover:bg-blue-100 transition-colors duration-150`}
+                      >
                         <td className="px-6 py-4 font-medium">{course.courseCode}</td>
                         <td className="px-6 py-4">{course.name}</td>
                         <td className="px-6 py-4">{course.semester}</td>

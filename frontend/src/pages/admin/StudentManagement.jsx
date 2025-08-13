@@ -159,7 +159,7 @@ const StudentManagement = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
+                            <table className="min-w-full">
                                 <thead className="bg-blue-50">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
@@ -167,14 +167,17 @@ const StudentManagement = () => {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
+                                <tbody>
                                     {displayedStudents.length === 0 ? (
                                         <tr>
                                             <td colSpan={3} className="text-center py-4 text-gray-500">No students found.</td>
                                         </tr>
                                     ) : (
-                                        displayedStudents.map((student) => (
-                                            <tr key={student.id} className="hover:bg-gray-50">
+                                        displayedStudents.map((student, index) => (
+                                            <tr 
+                                                key={student.id} 
+                                                className={`${index % 2 === 0 ? 'bg-white' : 'bg-blue-50'} hover:bg-blue-100 transition-colors duration-150`}
+                                            >
                                                 <td className="px-6 py-4 whitespace-nowrap">{student.name}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap">{student.email}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap">{student.departmentId || 'N/A'}</td>

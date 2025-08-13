@@ -137,56 +137,56 @@ const FacultyManagement = () => {
           </CardHeader>
           <CardContent>
             {/* Table remains the same */}
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-blue-50">
-                  <tr>
-                    {["Name", "Email", "Department ID", "Actions"].map((h) => (
-                      <th
-                        key={h}
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {faculty.map((f) => (
-                    <motion.tr
-                      key={f.id}
-                      whileHover={{ scale: 1.00 }}
-                      className="hover:bg-gray-50"
-                    >
-                      <td className="px-6 py-4">{f.name}</td>
-                      <td className="px-6 py-4">{f.email}</td>
-                      <td className="px-6 py-4">{f.departmentId || "N/A"}</td>
-                      <td className="px-6 py-4 flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEditingFaculty(f);
-                            setFormData({ ...f, password: "" });
-                            setIsModalOpen(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteFaculty(f.id)}
-                          className="text-red-600"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full">
+                                <thead className="bg-blue-50">
+                                    <tr>
+                                        {["Name", "Email", "Department ID", "Actions"].map((h) => (
+                                            <th
+                                                key={h}
+                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                                            >
+                                                {h}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {faculty.map((f, index) => (
+                                        <motion.tr
+                                            key={f.id}
+                                            whileHover={{ scale: 1.00 }}
+                                            className={`${index % 2 === 0 ? 'bg-white' : 'bg-blue-50'} hover:bg-blue-100 transition-colors duration-150`}
+                                        >
+                                            <td className="px-6 py-4">{f.name}</td>
+                                            <td className="px-6 py-4">{f.email}</td>
+                                            <td className="px-6 py-4">{f.departmentId || "N/A"}</td>
+                                            <td className="px-6 py-4 flex gap-2">
+                                                <Button
+                                                    variant=""
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setEditingFaculty(f);
+                                                        setFormData({ ...f, password: "" });
+                                                        setIsModalOpen(true);
+                                                    }}
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant=""
+                                                    size="sm"
+                                                    onClick={() => handleDeleteFaculty(f.id)}
+                                                    className="text-red-600"
+                                                >
+                                                    <Trash className="h-4 w-4" />
+                                                </Button>
+                                            </td>
+                                        </motion.tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
           </CardContent>
         </Card>
 

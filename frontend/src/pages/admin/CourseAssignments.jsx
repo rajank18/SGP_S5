@@ -158,22 +158,26 @@ const CourseAssignments = () => {
                                 <p className="text-gray-500 text-center py-8">No assignments found.</p>
                             ) : (
                                 <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
+                                    <table className="min-w-full">
                                         <thead className="bg-blue-50">
                                             <tr>
-                                                {['Course', 'Faculty', 'Assigned Date', 'Actions'].map(h => (
+                                                {['Course', 'Faculty', 'Assigned Date', 'Remove'].map(h => (
                                                     <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
                                                 ))}
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredAssignments.map(a => (
-                                                <motion.tr key={`${a.courseId}-${a.facultyId}`} whileHover={{ scale: 1.00 }} className="hover:bg-gray-50">
+                                            {filteredAssignments.map((a, index) => (
+                                                <motion.tr 
+                                                    key={`${a.courseId}-${a.facultyId}`} 
+                                                    whileHover={{ scale: 1.00 }} 
+                                                    className={`${index % 2 === 0 ? 'bg-white' : 'bg-blue-50'} hover:bg-blue-100 transition-colors duration-150`}
+                                                >
                                                     <td className="px-6 py-4 font-medium">{a.courseName} <span className="text-gray-500">({a.courseCode})</span></td>
                                                     <td className="px-6 py-4">{a.facultyName}</td>
                                                     <td className="px-6 py-4">{new Date(a.createdAt).toLocaleDateString()}</td>
                                                     <td className="px-6 py-4">
-                                                        <Button variant="outline" size="sm" onClick={() => handleRemoveAssignment(a.courseId, a.facultyId)} className="text-red-600">
+                                                        <Button variant="" size="sm" onClick={() => handleRemoveAssignment(a.courseId, a.facultyId)} className="text-red-600">
                                                             <Trash className="h-4 w-4" />
                                                         </Button>
                                                     </td>

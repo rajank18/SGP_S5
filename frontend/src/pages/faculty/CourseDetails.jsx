@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation';
 import { useParams, useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
-import { UploadCloud } from 'lucide-react';
+import { UploadCloud, ChevronDown, ChevronUp } from 'lucide-react';
 
 const CourseDetailsPage = () => {
     const { courseCode } = useParams();
@@ -25,6 +25,7 @@ const CourseDetailsPage = () => {
     const [groupsError, setGroupsError] = useState('');
     const [selectedProject, setSelectedProject] = useState(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+    const [showUploadSection, setShowUploadSection] = useState(false);
 
     const token = localStorage.getItem('prograde_token');
     const navigate = useNavigate();
@@ -231,206 +232,156 @@ const CourseDetailsPage = () => {
                     {/* Project Groups Display */}
                     <div>
                         <h2 className="text-2xl font-bold text-gray-800 mb-4">Project Groups</h2>
-                        <div className="p-6 bg-white rounded-xl shadow">
-                            {loadingGroups ? (
-                                <div className="text-gray-500">Loading project groups...</div>
-                            ) : groupsError ? (
-                                <div className="text-red-500">{groupsError}</div>
-                            ) : groups.length === 0 ? (
-                                <div className="text-gray-500">No project groups assigned yet.</div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {groups.map((group, idx) => (
-                                        <div
-                                            key={group.id || idx}
-                                            className="bg-white rounded-lg border shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer"
-                                            onClick={() => navigate(`/faculty/courses/${encodeURIComponent(course.courseCode)}/groups/${encodeURIComponent(group.groupNo)}`)}
-                                        >
-                                            <div className="flex items-center justify-between mb-1">
-                                                <div className="font-semibold text-gray-900">Group {group.groupNo}</div>
+                        {loadingGroups ? (
+                            <div className="text-gray-500">Loading project groups...</div>
+                        ) : groupsError ? (
+                            <div className="text-red-500">{groupsError}</div>
+                        ) : groups.length === 0 ? (
+                            <div className="text-gray-500">No project groups assigned yet.</div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {groups.map((group, idx) => (
+                                    <div
+                                        key={group.id || idx}
+                                        className="bg-white rounded-xl shadow-md p-6 flex flex-col justify-between hover:shadow-lg transition-shadow cursor-pointer"
+                                        onClick={() => navigate(`/faculty/courses/${encodeURIComponent(course.courseCode)}/groups/${encodeURIComponent(group.groupNo)}`)}
+                                    >
+                                        <div>
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className="font-bold text-xl text-gray-900">Group {group.groupNo}</div>
                                                 {group.groupName && (
-                                                    <div className="text-sm text-gray-600">{group.groupName}</div>
+                                                    <div className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+                                                        {group.groupName}
+                                                    </div>
                                                 )}
                                             </div>
-                                            <div className="text-gray-800 mb-1">
-                                                <span className="font-medium">Project:</span> {group.title || group.projectName}
+                                            <div className="text-gray-800 mb-3">
+                                                <span className="font-medium text-gray-700">Project:</span>
+                                                <div className="text-sm mt-1">{group.title || group.projectName}</div>
                                             </div>
                                             {group.externalGuideName && (
-                                                <div className="text-gray-700 text-sm mb-2">
-                                                    <span className="font-medium">External Guide:</span> {group.externalGuideName}
+                                                <div className="text-gray-700 text-sm mb-3">
+                                                    <span className="font-medium">External Guide:</span>
+                                                    <div className="mt-1">{group.externalGuideName}</div>
                                                 </div>
                                             )}
-                                            <div className="text-gray-700 text-sm mb-1">Students:</div>
-                                            <ul className="list-disc ml-6 text-sm space-y-1">
+                                            <div className="text-gray-700 text-sm mb-2">
+                                                <span className="font-medium">Students:</span>
+                                            </div>
+                                            <ul className="space-y-1">
                                                 {Array.isArray(group.participants) && group.participants.length > 0 ? (
                                                     group.participants.map((p, i) => {
                                                         const stu = p.student || {};
                                                         const display = stu.name ? `${stu.name} (${stu.email})` : (stu.email || p.studentId);
-                                                        return <li key={i}>{display}</li>;
+                                                        return (
+                                                            <li key={i} className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                                                                {display}
+                                                            </li>
+                                                        );
                                                     })
                                                 ) : (
                                                     (group.studentIds ? group.studentIds.split(',') : []).map((sid, i) => (
-                                                        <li key={i}>{sid}</li>
+                                                        <li key={i} className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                                                            {sid}
+                                                        </li>
                                                     ))
                                                 )}
                                             </ul>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                                        <div className="mt-4 pt-3 border-t border-gray-100">
+                                            <span className="text-xs font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                                Click to view details
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                     {/* --- CSV Upload Component JSX --- */}
-                    <div className="mt-12">
-                        <div className="bg-white rounded-xl shadow p-6 w-full max-w">
-                            <h3 className="text-xl font-semibold text-gray-800">Upload Project Groups CSV</h3>
-                            <ul className="list-disc pl-5 text-sm text-gray-600 mt-2 space-y-1">
-                                <li>CSV columns: <b>groupNo</b>, <b>groupName</b>, <b>projectTitle</b>, <b>projectDescription</b>, <b>fileUrl</b>, <b>internalGuideEmail</b>, <b>externalGuideName</b>, <b>studentEmail</b></li>
-                                <li>Each row represents one student; same <b>groupNo</b> are grouped together automatically</li>
-                                <li>Course code is auto-detected from the selected course</li>
-                                <li>Accepted file type: <b>.csv</b> (max ~10MB)</li>
-                            </ul>
-                            <form onSubmit={handleUpload} className="mt-4 space-y-4">
-                                {/* Dropzone */}
-                                <div
-                                    onDragOver={handleDragOver}
-                                    onDragEnter={handleDragOver}
-                                    onDragLeave={handleDragLeave}
-                                    onDrop={handleDrop}
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className={`border-2 border-dashed rounded-lg p-10 text-center transition-colors cursor-pointer ${
-                                        isDragging ? 'border-blue-400 bg-blue-50/50' : 'border-gray-300 hover:border-blue-300'
-                                    }`}
-                                >
-                                    <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />
-                                    <div className="mt-3">
-                                        <span className="text-blue-600 font-medium">Upload a file</span>
-                                        <div className="text-xs text-gray-500">CSV up to 10MB</div>
-                                    </div>
-                                    <input
-                                        id="file-upload"
-                                        type="file"
-                                        accept=".csv"
-                                        onChange={handleFileChange}
-                                        ref={fileInputRef}
-                                        className="hidden"
-                                    />
+                    <div className="mt-8">
+                        <button
+                            onClick={() => setShowUploadSection(!showUploadSection)}
+                            className="w-full bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all duration-200 ease-in-out"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                    <UploadCloud className="h-5 w-5 text-gray-600" />
+                                    <span className="text-gray-800 font-medium">
+                                        {groups.length === 0 ? 'Upload Project Groups CSV' : 'Upload More Project Groups'}
+                                    </span>
                                 </div>
-                                {file && (
-                                    <div className="mt-1 text-sm text-gray-700">
-                                        Selected: <span className="font-medium">{file.name}</span> <span className="text-gray-500">({Math.round(file.size / 1024)} KB)</span>
+                                <div className={`transform transition-transform duration-200 ease-in-out ${showUploadSection ? 'rotate-180' : 'rotate-0'}`}>
+                                    <ChevronDown className="h-5 w-5 text-gray-600" />
+                                </div>
+                            </div>
+                        </button>
+                        
+                        <div className={`overflow-hidden transition-all duration-300 ease-in-out ${showUploadSection ? 'max-h-[800px] opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'}`}>
+                            <div className="bg-white rounded-xl shadow p-6 border border-gray-200">
+                                <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                                    {groups.length === 0 ? 'Upload Project Groups CSV' : 'Upload Additional Project Groups CSV'}
+                                </h3>
+                                <ul className="list-disc pl-5 text-sm text-gray-600 mb-4 space-y-1">
+                                    <li>CSV columns: <b>GroupNo</b>, <b>GroupName</b>, <b>ProjectTitle</b>, <b>ProjectDescription</b>, <b>FileUrl</b>, <b>InternalGuideEmail</b>, <b>ExternalGuideName</b>, <b>StudentEmail</b></li>                                
+                                    <li>Accepted file type: <b>.csv</b> (max ~10MB)</li>
+                                </ul>
+                                <form onSubmit={handleUpload} className="space-y-4">
+                                    {/* Dropzone */}
+                                    <div
+                                        onDragOver={handleDragOver}
+                                        onDragEnter={handleDragOver}
+                                        onDragLeave={handleDragLeave}
+                                        onDrop={handleDrop}
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
+                                            isDragging ? 'border-blue-400 bg-blue-50/50' : 'border-gray-300 hover:border-blue-300'
+                                        }`}
+                                    >
+                                        <UploadCloud className="mx-auto h-10 w-10 text-gray-400" />
+                                        <div className="mt-2">
+                                            <span className="text-blue-600 font-medium">Upload a file</span>
+                                            <div className="text-xs text-gray-500">CSV up to 10MB</div>
+                                        </div>
+                                        <input
+                                            id="file-upload"
+                                            type="file"
+                                            accept=".csv"
+                                            onChange={handleFileChange}
+                                            ref={fileInputRef}
+                                            className="hidden"
+                                        />
                                     </div>
-                                )}
-                                {csvPreview.length > 0 && (
-                                        <div className="mt-2 text-sm text-blue-600">
-                                            ✓ CSV parsed: {csvPreview.length} rows loaded
-                                            <button 
-                                                type="button"
-                                                onClick={() => {}}
-                                                className="ml-2 text-blue-800 underline"
-                                            >
-                                                Debug Data
-                                            </button>
-                                            <button 
-                                                type="button"
-                                                onClick={() => {}}
-                                                className="ml-2 text-red-800 underline"
-                                            >
-                                                Check State
-                                            </button>
-                                            <button 
-                                                type="button"
-                                                onClick={async () => {}}
-                                                className="ml-2 text-green-800 underline"
-                                            >
-                                                Test Upload
-                                            </button>
+                                    {file && (
+                                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-green-800 text-sm font-medium">
+                                                    {file.name} ({Math.round(file.size / 1024)} KB)
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFile(null)}
+                                                    className="text-green-600 hover:text-green-800"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
-                                {/* CSV Preview Table */}
-                                {csvPreview.length > 0 && (
-                                    <div className="space-y-4">
-                                        {/* Raw CSV Data */}
-                                        <div>
-                                            <h4 className="font-medium text-gray-700 mb-2">Raw CSV Data:</h4>
-                                            <div className="overflow-x-auto border rounded">
-                                                <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                                    <thead className="bg-gray-50">
-                                                        <tr>
-                                                            <th className="px-4 py-2">Group No</th>
-                                                            <th className="px-4 py-2">Group Name</th>
-                                                            <th className="px-4 py-2">Project Title</th>
-                                                            <th className="px-4 py-2">Project Description</th>
-                                                            <th className="px-4 py-2">File URL</th>
-                                                            <th className="px-4 py-2">Internal Guide Email</th>
-                                                            <th className="px-4 py-2">External Guide Name</th>
-                                                            <th className="px-4 py-2">Course Code</th>
-                                                            <th className="px-4 py-2">Student Email</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {csvPreview.map((row, idx) => (
-                                                            <tr key={idx} className="hover:bg-gray-50">
-                                                                <td className="px-4 py-2">{row.groupNo || row.GroupNo}</td>
-                                                                <td className="px-4 py-2">{row.groupName || row.GroupName}</td>
-                                                                <td className="px-4 py-2">{row.projectTitle || row.ProjectTitle}</td>
-                                                                <td className="px-4 py-2">{row.projectDescription || row.ProjectDescription}</td>
-                                                                <td className="px-4 py-2">{row.fileUrl || row.FileUrl}</td>
-                                                                <td className="px-4 py-2">{row.internalGuideEmail || row.InternalGuideEmail}</td>
-                                                                <td className="px-4 py-2">{row.externalGuideName || row.ExternalGuideName}</td>
-                                                                <td className="px-4 py-2">{row.courseCode || row.CourseCode}</td>
-                                                                <td className="px-4 py-2">{row.studentEmail || row.StudentEmail}</td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
+                                    {uploadError && (
+                                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                            <span className="text-red-800 text-sm">{uploadError}</span>
                                         </div>
-                                        
-                                        {/* Grouped Data Preview */}
-                                        <div>
-                                            <h4 className="font-medium text-gray-700 mb-2">How data will be grouped:</h4>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {(() => {
-                                                    try {
-                                                        const grouped = processCsvData(csvPreview);
-                                                        return grouped.map((group, idx) => (
-                                                            <div key={idx} className="bg-gray-50 rounded-lg p-3 border">
-                                                                <div className="font-semibold text-gray-800">Group {group.groupNo}: {group.groupName}</div>
-                                                                <div className="text-sm text-gray-600 mb-2">Project: {group.projectTitle}</div>
-                                                                <div className="text-sm text-gray-600 mb-2">External Guide: {group.externalGuideName}</div>
-                                                                <div className="text-sm text-gray-700">
-                                                                    <span className="font-medium">Students ({group.students.length}):</span>
-                                                                    <ul className="list-disc ml-4 mt-1">
-                                                                        {group.students.map((student, i) => (
-                                                                            <li key={i}>{student.email}</li>
-                                                                        ))}
-                                                                    </ul>
-                                                                </div>
-                                                            </div>
-                                                        ));
-                                                    } catch (error) {
-                                                        return <div className="text-red-500">Error processing preview: {error.message}</div>;
-                                                    }
-                                                })()}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                <div className="flex items-center justify-between">
+                                    )}
                                     <button
                                         type="submit"
-                                        disabled={uploading || !file}
-                                        className="inline-flex items-center px-6 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                        disabled={!file || uploading}
+                                        className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                                     >
                                         {uploading ? 'Uploading...' : 'Upload CSV'}
                                     </button>
-                                    <div className="text-sm">
-                                        {uploadError && <p className="text-red-600 font-medium">{uploadError}</p>}
-                                        {uploadSuccess && <p className="text-green-600 font-medium">{uploadSuccess}</p>}
-                                    </div>
-                                </div>
-                            </form>
+                                </form>
+                            </div>
                         </div>
                     </div>
                     

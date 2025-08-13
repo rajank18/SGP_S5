@@ -155,7 +155,7 @@ const FacultyManagement = () => {
                   {faculty.map((f) => (
                     <motion.tr
                       key={f.id}
-                      whileHover={{ scale: 1.01 }}
+                      whileHover={{ scale: 1.00 }}
                       className="hover:bg-gray-50"
                     >
                       <td className="px-6 py-4">{f.name}</td>

@@ -108,7 +108,7 @@ const CourseManagement = () => {
                                 </thead>
                                 <tbody>
                                     {courses.map((c) => (
-                                        <motion.tr key={c.id} whileHover={{ scale: 1.01 }} className="hover:bg-gray-50">
+                                        <motion.tr key={c.id} whileHover={{ scale: 1.00 }} className="hover:bg-gray-50">
                                             <td className="px-6 py-4">{c.courseCode}</td>
                                             <td className="px-6 py-4">{c.name}</td>
                                             <td className="px-6 py-4">{c.semester}</td>

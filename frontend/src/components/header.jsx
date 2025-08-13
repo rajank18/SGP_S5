@@ -27,7 +27,7 @@ const Header = () => {
   //bg-[#308AF4]
 
   return (
-    <header className="bg-[#328DFF] text-white flex items-center justify-between px-6 py-3">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#328DFF] text-white flex items-center justify-between px-6 py-3  border-b-black shadow-lg">
       {/* Hamburger Menu */}
       <div className="flex-1">
         <button className="bg-transparent border-none text-white text-2xl cursor-pointer">
@@ -44,7 +44,7 @@ const Header = () => {
           {initials}
         </div>
         <span className="mr-2">{userName}</span>
-        <span className="mr-2 text-sm bg-white/20 px-2 py-1 rounded">{userRole}</span>
+        {/* <span className="mr-2 text-sm bg-white/20 px-2 py-1 rounded">{userRole}</span> */}
         <button
           onClick={handleLogout}
           className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"

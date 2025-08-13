@@ -76,7 +76,7 @@ const StudentProjectDetails = () => {
             <div className="text-gray-600">Group {project.groupNo}{project.groupName ? ` • ${project.groupName}` : ''}</div>
             <div className="text-sm text-gray-500 mt-1">Course: {course.name} ({course.courseCode})</div>
           </div>
-          <button className="text-blue-600 hover:text-blue-700" onClick={() => navigate('/student/dashboard')}>Back</button>
+          <button className="text-blue-600 font-bold hover:text-blue-700" onClick={() => navigate('/student/dashboard')}>Back</button>
         </header>
 
         <main className="space-y-6">
@@ -117,7 +117,7 @@ const StudentProjectDetails = () => {
                 <input
                   type="url"
                   className="w-full border rounded p-2 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="https://..."
+                  placeholder="https://github.com/student/sgp"
                   value={fileUrl}
                   onChange={(e) => setFileUrl(e.target.value)}
                 />

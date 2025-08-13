@@ -7,7 +7,9 @@ const Auth = () => {
   return (
     <>
      <AuthHeader/>
-     <Outlet />
+     <div className="pt-32">
+       <Outlet />
+     </div>
     </>
   )
 }

@@ -95,35 +95,43 @@ const CourseAssignments = () => {
                     <CardHeader>
                         <CardTitle>Quick Assign</CardTitle>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                        <div>
-                            <Label htmlFor="course-select">Course</Label>
-                            <select
-                                id="course-select"
-                                value={selectedCourse}
-                                onChange={(e) => setSelectedCourse(e.target.value)}
-                                className="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            >
-                                <option value="">Select a course</option>
-                                {courses.map(c => <option key={c.id} value={c.id}>{c.courseCode} - {c.name}</option>)}
-                            </select>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                            <div className="space-y-2">
+                                <Label htmlFor="course-select" className="text-sm font-medium text-gray-700">Course</Label>
+                                <select
+                                    id="course-select"
+                                    value={selectedCourse}
+                                    onChange={(e) => setSelectedCourse(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 bg-white text-gray-900 placeholder-gray-500"
+                                >
+                                    <option value="">Select a course</option>
+                                    {courses.map(c => <option key={c.id} value={c.id}>{c.courseCode} - {c.name}</option>)}
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="faculty-select" className="text-sm font-medium text-gray-700">Faculty</Label>
+                                <select
+                                    id="faculty-select"
+                                    value={selectedFaculty}
+                                    onChange={(e) => setSelectedFaculty(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 bg-white text-gray-900 placeholder-gray-500"
+                                >
+                                    <option value="">Select faculty</option>
+                                    {faculty.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                                </select>
+                            </div>
+                            <div className="flex items-end">
+                                <Button 
+                                    onClick={handleSaveAssignment} 
+                                    disabled={!selectedCourse || !selectedFaculty} 
+                                    className="w-full md:w-auto h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+                                >
+                                    <PlusCircle className="h-4 w-4 mr-2" />
+                                    Assign
+                                </Button>
+                            </div>
                         </div>
-                        <div>
-                            <Label htmlFor="faculty-select">Faculty</Label>
-                            <select
-                                id="faculty-select"
-                                value={selectedFaculty}
-                                onChange={(e) => setSelectedFaculty(e.target.value)}
-                                className="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            >
-                                <option value="">Select faculty</option>
-                                {faculty.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-                            </select>
-                        </div>
-                        <Button onClick={handleSaveAssignment} disabled={!selectedCourse || !selectedFaculty} className="bg-blue-600 hover:bg-blue-700 w-full md:w-auto">
-                            <PlusCircle className="h-4 w-4 mr-2" />
-                            Assign
-                        </Button>
                     </CardContent>
                 </Card>
 
@@ -133,47 +141,49 @@ const CourseAssignments = () => {
                         <CardTitle>Current Assignments ({filteredAssignments.length})</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <Input
-                            placeholder="Search by course, code, or faculty name..."
-                            onChange={(e) => {
-                                const term = e.target.value.toLowerCase();
-                                setFilteredAssignments(assignments.filter(a =>
-                                    a.courseName.toLowerCase().includes(term) ||
-                                    a.courseCode.toLowerCase().includes(term) ||
-                                    a.facultyName.toLowerCase().includes(term)
-                                ));
-                            }}
-                            className="mb-4"
-                        />
-                        {filteredAssignments.length === 0 ? (
-                            <p className="text-gray-500 text-center py-8">No assignments found.</p>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-blue-50">
-                                        <tr>
-                                            {['Course', 'Faculty', 'Assigned Date', 'Actions'].map(h => (
-                                                <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
+                        <div className="space-y-4">
+                            <Input
+                                placeholder="Search by course, code, or faculty name..."
+                                onChange={(e) => {
+                                    const term = e.target.value.toLowerCase();
+                                    setFilteredAssignments(assignments.filter(a =>
+                                        a.courseName.toLowerCase().includes(term) ||
+                                        a.courseCode.toLowerCase().includes(term) ||
+                                        a.facultyName.toLowerCase().includes(term)
+                                    ));
+                                }}
+                                className="max-w-md border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200"
+                            />
+                            {filteredAssignments.length === 0 ? (
+                                <p className="text-gray-500 text-center py-8">No assignments found.</p>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-blue-50">
+                                            <tr>
+                                                {['Course', 'Faculty', 'Assigned Date', 'Actions'].map(h => (
+                                                    <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredAssignments.map(a => (
+                                                <motion.tr key={`${a.courseId}-${a.facultyId}`} whileHover={{ scale: 1.00 }} className="hover:bg-gray-50">
+                                                    <td className="px-6 py-4 font-medium">{a.courseName} <span className="text-gray-500">({a.courseCode})</span></td>
+                                                    <td className="px-6 py-4">{a.facultyName}</td>
+                                                    <td className="px-6 py-4">{new Date(a.createdAt).toLocaleDateString()}</td>
+                                                    <td className="px-6 py-4">
+                                                        <Button variant="outline" size="sm" onClick={() => handleRemoveAssignment(a.courseId, a.facultyId)} className="text-red-600">
+                                                            <Trash className="h-4 w-4" />
+                                                        </Button>
+                                                    </td>
+                                                </motion.tr>
                                             ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredAssignments.map(a => (
-                                            <motion.tr key={`${a.courseId}-${a.facultyId}`} whileHover={{ scale: 1.01 }} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 font-medium">{a.courseName} <span className="text-gray-500">({a.courseCode})</span></td>
-                                                <td className="px-6 py-4">{a.facultyName}</td>
-                                                <td className="px-6 py-4">{new Date(a.createdAt).toLocaleDateString()}</td>
-                                                <td className="px-6 py-4">
-                                                    <Button variant="outline" size="sm" onClick={() => handleRemoveAssignment(a.courseId, a.facultyId)} className="text-red-600">
-                                                        <Trash className="h-4 w-4" />
-                                                    </Button>
-                                                </td>
-                                            </motion.tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
             </div>

@@ -139,12 +139,12 @@ const FacultyManagement = () => {
             {/* Table remains the same */}
                         <div className="overflow-x-auto">
                             <table className="min-w-full">
-                                <thead className="bg-blue-50">
+                                <thead className="bg-blue-100">
                                     <tr>
                                         {["Name", "Email", "Department ID", "Actions"].map((h) => (
                                             <th
                                                 key={h}
-                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b-0"
                                             >
                                                 {h}
                                             </th>
@@ -156,12 +156,12 @@ const FacultyManagement = () => {
                                         <motion.tr
                                             key={f.id}
                                             whileHover={{ scale: 1.00 }}
-                                            className={`${index % 2 === 0 ? 'bg-white' : 'bg-blue-50'} hover:bg-blue-100 transition-colors duration-150`}
+                                            className={`odd:bg-white even:bg-blue-50 hover:bg-blue-100 transition-colors duration-150`}
                                         >
-                                            <td className="px-6 py-4">{f.name}</td>
-                                            <td className="px-6 py-4">{f.email}</td>
-                                            <td className="px-6 py-4">{f.departmentId || "N/A"}</td>
-                                            <td className="px-6 py-4 flex gap-2">
+                                            <td className="px-6 py-4 border-b-0">{f.name}</td>
+                                            <td className="px-6 py-4 border-b-0">{f.email}</td>
+                                            <td className="px-6 py-4 border-b-0">{f.departmentId || "N/A"}</td>
+                                            <td className="px-6 py-4 flex gap-2 border-b-0">
                                                 <Button
                                                     variant=""
                                                     size="sm"

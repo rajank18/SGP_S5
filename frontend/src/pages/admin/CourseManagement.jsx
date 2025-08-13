@@ -99,25 +99,25 @@ const CourseManagement = () => {
                         {/* Table remains the same */}
                         <div className="overflow-x-auto">
                             <table className="min-w-full">
-                                <thead className="bg-blue-50">
+                                <thead className="bg-blue-100">
                                     <tr>
                                         {['Code', 'Name', 'Semester', 'Year', 'Actions'].map((h) => (
-                                            <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
+                                            <th key={h} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b-0">{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {courses.map((c, index) => (
+                                    {courses.map((c) => (
                                         <motion.tr 
                                             key={c.id} 
                                             whileHover={{ scale: 1.00 }} 
-                                            className={`${index % 2 === 0 ? 'bg-white' : 'bg-blue-50'} hover:bg-blue-100 transition-colors duration-150`}
+                                            className="odd:bg-white even:bg-blue-50 hover:bg-blue-100 transition-colors duration-150"
                                         >
-                                            <td className="px-6 py-4">{c.courseCode}</td>
-                                            <td className="px-6 py-4">{c.name}</td>
-                                            <td className="px-6 py-4">{c.semester}</td>
-                                            <td className="px-6 py-4">{c.year}</td>
-                                            <td className="px-6 py-4 flex gap-2">
+                                            <td className="px-6 py-4 border-b-0">{c.courseCode}</td>
+                                            <td className="px-6 py-4 border-b-0">{c.name}</td>
+                                            <td className="px-6 py-4 border-b-0">{c.semester}</td>
+                                            <td className="px-6 py-4 border-b-0">{c.year}</td>
+                                            <td className="px-6 py-4 flex gap-2 border-b-0">
                                                 <Button variant="" size="sm" onClick={() => { setEditingCourse(c); setFormData(c); setIsModalOpen(true); }}>
                                                     <Edit className="h-4 w-4" />
                                                 </Button>

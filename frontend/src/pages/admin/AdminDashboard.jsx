@@ -113,23 +113,23 @@ const AdminDashboard = () => {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left text-gray-700">
-                  <thead className="bg-blue-50 text-xs text-gray-600 uppercase">
+                  <thead className="bg-blue-100 text-xs text-gray-600 uppercase">
                     <tr>
                       {['Course Code', 'Name', 'Semester', 'Year'].map((header) => (
-                        <th key={header} scope="col" className="px-6 py-3">{header}</th>
+                        <th key={header} scope="col" className="px-6 py-3 border-b-0">{header}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {courses.slice(0, 5).map((course, index) => (
+                    {courses.slice(0, 5).map((course) => (
                       <tr 
                         key={course.id} 
-                        className={`${index % 2 === 0 ? 'bg-white' : 'bg-blue-50'} hover:bg-blue-100 transition-colors duration-150`}
+                        className="odd:bg-white even:bg-blue-50 hover:bg-blue-100 transition-colors duration-150"
                       >
-                        <td className="px-6 py-4 font-medium">{course.courseCode}</td>
-                        <td className="px-6 py-4">{course.name}</td>
-                        <td className="px-6 py-4">{course.semester}</td>
-                        <td className="px-6 py-4">{course.year}</td>
+                        <td className="px-6 py-4 font-medium border-b-0">{course.courseCode}</td>
+                        <td className="px-6 py-4 border-b-0">{course.name}</td>
+                        <td className="px-6 py-4 border-b-0">{course.semester}</td>
+                        <td className="px-6 py-4 border-b-0">{course.year}</td>
                       </tr>
                     ))}
                   </tbody>

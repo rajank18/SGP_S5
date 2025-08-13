@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, FileText, UserCheck, UserX, Users, ChevronDown, ChevronUp } from 'lucide-react';
+import { UploadCloud, FileText, UserCheck, UserX, Users, ChevronDown, ChevronUp, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation';
+import Papa from 'papaparse';
 
 const StudentManagement = () => {
     const [file, setFile] = useState(null);
@@ -13,6 +14,9 @@ const StudentManagement = () => {
     const [students, setStudents] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [showAll, setShowAll] = useState(false);
+    const [showUploadSection, setShowUploadSection] = useState(false);
+    const [previewRows, setPreviewRows] = useState([]);
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         fetchStudents();
@@ -33,14 +37,29 @@ const StudentManagement = () => {
     };
 
     const handleFileChange = (e) => {
-        const selectedFile = e.target.files[0];
-        if (selectedFile && selectedFile.type === 'text/csv') {
-            setFile(selectedFile);
-            setResult(null);
-        } else {
-            toast.error('Please select a valid .csv file.');
+        const selectedFile = e.target.files && e.target.files[0];
+        if (!selectedFile) return;
+        const isCsv = selectedFile.name.toLowerCase().endsWith('.csv');
+        const under10Mb = selectedFile.size <= 10 * 1024 * 1024;
+        if (!isCsv || !under10Mb) {
+            toast.error(!isCsv ? 'Only .csv files are allowed.' : 'File size must be 10MB or less.');
             setFile(null);
+            setPreviewRows([]);
+            setResult(null);
+            return;
         }
+        setFile(selectedFile);
+        setResult(null);
+        Papa.parse(selectedFile, {
+            header: true,
+            preview: 5,
+            skipEmptyLines: true,
+            complete: (results) => {
+                const rows = Array.isArray(results.data) ? results.data.filter(r => Object.keys(r).length > 0) : [];
+                setPreviewRows(rows.slice(0, 5));
+            },
+            error: () => setPreviewRows([]),
+        });
     };
 
     const handleUpload = async (e) => {
@@ -64,8 +83,9 @@ const StudentManagement = () => {
             if (!res.ok) throw new Error(data.message || 'Upload failed');
             setResult(data);
             toast.success('Upload complete!');
-            setFile(null); // Clear the file input
-            fetchStudents(); // Refresh student list
+            setFile(null);
+            setPreviewRows([]);
+            fetchStudents();
         } catch (err) {
             toast.error(err.message);
         } finally {
@@ -96,46 +116,153 @@ const StudentManagement = () => {
                     </h1>
                 </div>
 
-                {/* Upload Card */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Student Bulk Upload</CardTitle>
-                        <p className="text-sm text-gray-500">Upload a CSV file with columns: `name`, `email`, `departmentId`.</p>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={handleUpload} className="space-y-4">
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                                <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />
-                                <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500">
-                                    <span>Upload a file</span>
-                                    <input id="file-upload" name="file-upload" type="file" className="sr-only" accept=".csv" onChange={handleFileChange} disabled={uploading} />
-                                </label>
-                                <p className="text-xs text-gray-500">CSV up to 10MB</p>
-                                {file && <p className="text-sm mt-2 text-gray-700"><FileText className="inline-block h-4 w-4 mr-1"/>{file.name}</p>}
-                            </div>
-                            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" disabled={uploading || !file}>
-                                {uploading ? 'Uploading...' : 'Upload CSV'}
-                            </Button>
-                        </form>
-                        {result && (
-                            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                                <h3 className="font-semibold text-lg">Upload Summary</h3>
-                                <div className="mt-2 space-y-2 text-sm">
-                                   <p className="flex items-center gap-2"><UserCheck className="h-5 w-5 text-green-500" />Inserted: {result.insertedCount}</p>
-                                   <p className="flex items-center gap-2"><UserX className="h-5 w-5 text-yellow-500" />Skipped: {result.skippedCount}</p>
-                                   {result.skippedEmails && result.skippedEmails.length > 0 && (
-                                       <div>
-                                           <p className="font-medium">Skipped Emails (already exist):</p>
-                                           <ul className="list-disc ml-6 text-gray-600">
-                                               {result.skippedEmails.map((email) => <li key={email}>{email}</li>)}
-                                           </ul>
-                                       </div>
-                                   )}
+                {/* Upload Toggle Button */}
+                <div className="flex justify-end">
+                    <Button
+                        onClick={() => setShowUploadSection(v => !v)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white inline-flex items-center gap-2"
+                        aria-expanded={showUploadSection}
+                        aria-controls="students-upload-panel"
+                    >
+                        <UploadCloud className="h-4 w-4" />
+                        {showUploadSection ? 'Hide Upload' : 'Upload Students CSV'}
+                    </Button>
+                </div>
+
+                {/* Collapsible Upload Panel */}
+                <div id="students-upload-panel" className={`overflow-hidden transition-all duration-300 ease-in-out ${showUploadSection ? 'max-h-[1200px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                    <Card className="mt-2">
+                        <CardHeader>
+                            <CardTitle>Student Bulk Upload</CardTitle>
+                            <p className="text-sm text-gray-500">CSV columns: StudentID, Name, Email, Department, Batch, EnrollmentYear</p>
+                        </CardHeader>
+                        <CardContent>
+                            <form onSubmit={handleUpload} className="space-y-4">
+                                {/* Hidden File Input */}
+                                <input
+                                    ref={fileInputRef}
+                                    id="file-upload"
+                                    name="file-upload"
+                                    type="file"
+                                    className="hidden"
+                                    accept=".csv"
+                                    onChange={handleFileChange}
+                                    disabled={uploading}
+                                />
+
+                                {/* Drag & Drop Zone */}
+                                <div
+                                    onClick={() => fileInputRef.current?.click()}
+                                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        const droppedFile = e.dataTransfer.files && e.dataTransfer.files[0];
+                                        if (!droppedFile) return;
+                                        const isCsv = droppedFile.name.toLowerCase().endsWith('.csv');
+                                        const under10Mb = droppedFile.size <= 10 * 1024 * 1024;
+                                        if (!isCsv || !under10Mb) {
+                                            toast.error(!isCsv ? 'Only .csv files are allowed.' : 'File size must be 10MB or less.');
+                                            setFile(null);
+                                            setPreviewRows([]);
+                                            setResult(null);
+                                            return;
+                                        }
+                                        setFile(droppedFile);
+                                        setResult(null);
+                                        Papa.parse(droppedFile, {
+                                            header: true,
+                                            preview: 5,
+                                            skipEmptyLines: true,
+                                            complete: (results) => {
+                                                const rows = Array.isArray(results.data) ? results.data.filter(r => Object.keys(r).length > 0) : [];
+                                                setPreviewRows(rows.slice(0, 5));
+                                            },
+                                            error: () => setPreviewRows([]),
+                                        });
+                                    }}
+                                    className="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors"
+                                >
+                                    <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />
+                                    <p className="mt-2 text-sm text-gray-600">Drag and drop your .csv file here, or click to select (max 10MB)</p>
                                 </div>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+
+                                {/* Selected File Info */}
+                                {file && (
+                                    <div className="flex items-center justify-between rounded-md bg-gray-50 p-3">
+                                        <div className="text-sm text-gray-700">
+                                            <span className="font-medium">{file.name}</span>
+                                            <span className="ml-2 text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="text-gray-500 hover:text-gray-700"
+                                            onClick={() => { setFile(null); setPreviewRows([]); setResult(null); }}
+                                        >
+                                            <X className="h-5 w-5" />
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* CSV Preview */}
+                                {previewRows.length > 0 && (
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full text-sm">
+                                            <thead className="bg-blue-100">
+                                                <tr>
+                                                    {Object.keys(previewRows[0]).map((key) => (
+                                                        <th key={key} className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase border-b-0">{key}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {previewRows.map((row, idx) => (
+                                                    <tr key={idx} className="odd:bg-white even:bg-blue-50">
+                                                        {Object.keys(previewRows[0]).map((key) => (
+                                                            <td key={key} className="px-4 py-2 border-b-0 whitespace-nowrap">{String(row[key] ?? '')}</td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+
+                                {/* Actions */}
+                                <div className="flex gap-3 pt-2">
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        className="bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                        onClick={() => { setFile(null); setPreviewRows([]); setResult(null); fileInputRef.current?.click(); }}
+                                    >
+                                        Choose file
+                                    </Button>
+                                    <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white" disabled={uploading || !file}>
+                                        {uploading ? 'Uploading...' : 'Upload CSV'}
+                                    </Button>
+                                </div>
+                            </form>
+
+                            {result && (
+                                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                                    <h3 className="font-semibold text-lg">Upload Summary</h3>
+                                    <div className="mt-2 space-y-2 text-sm">
+                                        <p className="flex items-center gap-2"><UserCheck className="h-5 w-5 text-green-500" />Inserted: {result.insertedCount}</p>
+                                        <p className="flex items-center gap-2"><UserX className="h-5 w-5 text-yellow-500" />Skipped: {result.skippedCount}</p>
+                                        {result.skippedEmails && result.skippedEmails.length > 0 && (
+                                            <div>
+                                                <p className="font-medium">Skipped Emails (already exist):</p>
+                                                <ul className="list-disc ml-6 text-gray-600">
+                                                    {result.skippedEmails.map((email) => <li key={email}>{email}</li>)}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
 
                 {/* Student List Card */}
                 <Card>
@@ -160,27 +287,27 @@ const StudentManagement = () => {
                     <CardContent>
                         <div className="overflow-x-auto">
                             <table className="min-w-full">
-                                <thead className="bg-blue-50">
+                                <thead className="bg-blue-100">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b-0">Name</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b-0">Email</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b-0">Department</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {displayedStudents.length === 0 ? (
                                         <tr>
-                                            <td colSpan={3} className="text-center py-4 text-gray-500">No students found.</td>
+                                            <td colSpan={3} className="text-center py-4 text-gray-500 border-b-0">No students found.</td>
                                         </tr>
                                     ) : (
                                         displayedStudents.map((student, index) => (
                                             <tr 
                                                 key={student.id} 
-                                                className={`${index % 2 === 0 ? 'bg-white' : 'bg-blue-50'} hover:bg-blue-100 transition-colors duration-150`}
+                                                className={`odd:bg-white even:bg-blue-50 hover:bg-blue-100 transition-colors duration-150`}
                                             >
-                                                <td className="px-6 py-4 whitespace-nowrap">{student.name}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{student.email}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{student.departmentId || 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap border-b-0">{student.name}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap border-b-0">{student.email}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap border-b-0">{student.departmentId || 'N/A'}</td>
                                             </tr>
                                         ))
                                     )}

@@ -1,24 +1,7 @@
-// import React from 'react'
-// 
-
-// import Footer from '../components/website/Footer' 
-// 
-
-// const Web = () => {
-//   return (
-//     <>
-//       
-//       
-//       <Footer />
-//     </> 
-//   )
-// }
-
-// export default Web
-
 import React from 'react'
 import { Outlet } from 'react-router-dom'
 import Header from '../components/header'
+import Chatbot from '@/components/ChatBot'
 
 const Web = () => {
   return (
@@ -27,6 +10,7 @@ const Web = () => {
     <div className="pt-16">
       <Outlet />
     </div>
+    <Chatbot/>
     </>
   )
 }

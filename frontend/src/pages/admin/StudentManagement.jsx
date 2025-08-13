@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UploadCloud, FileText, UserCheck, UserX, Users } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { UploadCloud, FileText, UserCheck, UserX, Users, ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation';
 
@@ -10,6 +11,8 @@ const StudentManagement = () => {
     const [uploading, setUploading] = useState(false);
     const [result, setResult] = useState(null);
     const [students, setStudents] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showAll, setShowAll] = useState(false);
 
     useEffect(() => {
         fetchStudents();
@@ -70,6 +73,16 @@ const StudentManagement = () => {
         }
     };
 
+    const sortedStudents = [...students].sort((a, b) => (Number(b.id || 0) - Number(a.id || 0)));
+    const filteredStudents = sortedStudents.filter((student) => {
+        const query = searchQuery.trim().toLowerCase();
+        if (!query) return true;
+        const nameMatch = (student.name || '').toLowerCase().includes(query);
+        const deptMatch = String(student.departmentId ?? '').toLowerCase().includes(query);
+        return nameMatch || deptMatch;
+    });
+    const displayedStudents = (searchQuery.trim() || showAll) ? filteredStudents : filteredStudents.slice(0, 5);
+
     return (
         <div className="min-h-screen bg-white p-4 sm:p-6 lg:p-8">
             <div className="mx-auto max-w-7xl space-y-6">
@@ -127,7 +140,22 @@ const StudentManagement = () => {
                 {/* Student List Card */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Student List ({students.length})</CardTitle>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <CardTitle>
+                                {searchQuery.trim()
+                                    ? `Student List (${filteredStudents.length} result${filteredStudents.length === 1 ? '' : 's'})`
+                                    : showAll
+                                        ? `Student List (${students.length})`
+                                        : `Student List (Showing last ${Math.min(5, students.length)} of ${students.length})`}
+                            </CardTitle>
+                            <div className="w-full sm:w-80">
+                                <Input
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search by name or department"
+                                />
+                            </div>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className="overflow-x-auto">
@@ -140,12 +168,12 @@ const StudentManagement = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {students.length === 0 ? (
+                                    {displayedStudents.length === 0 ? (
                                         <tr>
                                             <td colSpan={3} className="text-center py-4 text-gray-500">No students found.</td>
                                         </tr>
                                     ) : (
-                                        students.map((student) => (
+                                        displayedStudents.map((student) => (
                                             <tr key={student.id} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4 whitespace-nowrap">{student.name}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap">{student.email}</td>
@@ -156,6 +184,17 @@ const StudentManagement = () => {
                                 </tbody>
                             </table>
                         </div>
+                        {!searchQuery.trim() && students.length > 5 && (
+                            <div className="flex justify-center mt-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAll(!showAll)}
+                                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700"
+                                >
+                                    {showAll ? (<><ChevronUp className="h-4 w-4" /> Show less</>) : (<><ChevronDown className="h-4 w-4" /> Show all</>)}
+                                </button>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>

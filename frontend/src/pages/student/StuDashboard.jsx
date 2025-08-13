@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const StuDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [projects, setProjects] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem('prograde_token');
@@ -37,7 +39,7 @@ const StuDashboard = () => {
 
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {projects.map((p) => (
-          <div key={p.id} className="border rounded p-4 shadow-sm bg-white">
+          <div key={p.id} className="border rounded p-4 shadow-sm bg-white hover:shadow-md cursor-pointer" onClick={() => navigate(`/student/projects/${p.id}`)}>
             <div className="flex items-center justify-between mb-2">
               <div className="text-sm text-gray-500">Group #{p.groupNo}{p.groupName ? ` • ${p.groupName}` : ''}</div>
             </div>

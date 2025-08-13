@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import BackButton from '@/components/ui/BackButton';
-import { useParams } from 'react-router-dom';
+import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation';
+import { useParams, useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
+import { UploadCloud } from 'lucide-react';
 
 const CourseDetailsPage = () => {
-    const { courseId } = useParams();
+    const { courseCode } = useParams();
     const [course, setCourse] = useState(null);
     const [loadingCourse, setLoadingCourse] = useState(true);
     const [courseError, setCourseError] = useState('');
@@ -15,16 +16,20 @@ const CourseDetailsPage = () => {
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState('');
     const [uploadSuccess, setUploadSuccess] = useState('');
+    const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef();
 
     // Project Groups State
     const [groups, setGroups] = useState([]);
     const [loadingGroups, setLoadingGroups] = useState(true);
     const [groupsError, setGroupsError] = useState('');
+    const [selectedProject, setSelectedProject] = useState(null);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
     const token = localStorage.getItem('prograde_token');
+    const navigate = useNavigate();
 
-    // Fetch course details from backend
+    // Fetch course details from backend (map courseCode -> course)
     useEffect(() => {
         const fetchCourse = async () => {
             setLoadingCourse(true);
@@ -35,8 +40,8 @@ const CourseDetailsPage = () => {
                 });
                 if (!res.ok) throw new Error("Failed to fetch assigned courses");
                 const data = await res.json();
-                // Find the course with the matching courseId
-                const found = (data.courses || []).find(c => String(c.id) === String(courseId));
+                // Find the course with the matching courseCode
+                const found = (data.courses || []).find(c => String(c.courseCode) === String(courseCode));
                 if (!found) throw new Error("Course not found");
                 setCourse(found);
             } catch (err) {
@@ -46,14 +51,15 @@ const CourseDetailsPage = () => {
             }
         };
         fetchCourse();
-    }, [courseId, token]);
+    }, [courseCode, token]);
 
     // Fetch project groups
     const fetchGroups = async () => {
         setLoadingGroups(true);
         setGroupsError('');
         try {
-            const res = await fetch(`http://localhost:3001/api/faculty/courses/${courseId}/projects`, {
+            // Use course.id from fetched course object
+            const res = await fetch(`http://localhost:3001/api/faculty/courses/${course?.id}/projects`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) throw new Error('Failed to fetch project groups');
@@ -65,7 +71,7 @@ const CourseDetailsPage = () => {
             setLoadingGroups(false);
         }
     };
-    useEffect(() => { fetchGroups(); }, [courseId]);
+    useEffect(() => { if (course?.id) { fetchGroups(); } }, [course?.id]);
 
     // CSV file change handler
     const handleFileChange = (e) => {
@@ -86,6 +92,28 @@ const CourseDetailsPage = () => {
                     setCsvPreview([]);
                 }
             });
+        }
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+        const droppedFile = e.dataTransfer?.files?.[0];
+        if (droppedFile) {
+            handleFileChange({ target: { files: [droppedFile] } });
         }
     };
 
@@ -115,7 +143,7 @@ const CourseDetailsPage = () => {
             const formData = new FormData();
             formData.append('file', file);
             
-            const res = await fetch(`http://localhost:3001/api/faculty/courses/${courseId}/projects/upload`, {
+            const res = await fetch(`http://localhost:3001/api/faculty/courses/${course?.id}/projects/upload`, {
                 method: 'POST',
                 headers: { 
                     'Authorization': `Bearer ${token}`
@@ -195,39 +223,105 @@ const CourseDetailsPage = () => {
         <div className="bg-gray-100 min-h-screen p-8">
             <div className="max-w-7xl mx-auto">
                 <header className="mb-8">
-                    <div className="mb-2">
-                        <BackButton />
-                    </div>
+                    <BreadcrumbNavigation />
                     <h1 className="text-3xl font-bold text-gray-800">{course.name}</h1>
                     <p className="text-lg text-gray-600">{course.courseCode}</p>
                 </header>
                 <main>
+                    {/* Project Groups Display */}
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-4">Project Groups</h2>
+                        <div className="p-6 bg-white rounded-xl shadow">
+                            {loadingGroups ? (
+                                <div className="text-gray-500">Loading project groups...</div>
+                            ) : groupsError ? (
+                                <div className="text-red-500">{groupsError}</div>
+                            ) : groups.length === 0 ? (
+                                <div className="text-gray-500">No project groups assigned yet.</div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {groups.map((group, idx) => (
+                                        <div
+                                            key={group.id || idx}
+                                            className="bg-white rounded-lg border shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer"
+                                            onClick={() => navigate(`/faculty/courses/${encodeURIComponent(course.courseCode)}/groups/${encodeURIComponent(group.groupNo)}`)}
+                                        >
+                                            <div className="flex items-center justify-between mb-1">
+                                                <div className="font-semibold text-gray-900">Group {group.groupNo}</div>
+                                                {group.groupName && (
+                                                    <div className="text-sm text-gray-600">{group.groupName}</div>
+                                                )}
+                                            </div>
+                                            <div className="text-gray-800 mb-1">
+                                                <span className="font-medium">Project:</span> {group.title || group.projectName}
+                                            </div>
+                                            {group.externalGuideName && (
+                                                <div className="text-gray-700 text-sm mb-2">
+                                                    <span className="font-medium">External Guide:</span> {group.externalGuideName}
+                                                </div>
+                                            )}
+                                            <div className="text-gray-700 text-sm mb-1">Students:</div>
+                                            <ul className="list-disc ml-6 text-sm space-y-1">
+                                                {Array.isArray(group.participants) && group.participants.length > 0 ? (
+                                                    group.participants.map((p, i) => {
+                                                        const stu = p.student || {};
+                                                        const display = stu.name ? `${stu.name} (${stu.email})` : (stu.email || p.studentId);
+                                                        return <li key={i}>{display}</li>;
+                                                    })
+                                                ) : (
+                                                    (group.studentIds ? group.studentIds.split(',') : []).map((sid, i) => (
+                                                        <li key={i}>{sid}</li>
+                                                    ))
+                                                )}
+                                            </ul>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                     {/* --- CSV Upload Component JSX --- */}
-                    <div className="mb-12">
-                        <div className="bg-white rounded-xl shadow p-6 w-full max-w-2xl">
+                    <div className="mt-12">
+                        <div className="bg-white rounded-xl shadow p-6 w-full max-w">
                             <h3 className="text-xl font-semibold text-gray-800">Upload Project Groups CSV</h3>
-                            <p className="text-sm text-gray-500 mt-1">
-                                CSV columns: <b>groupNo</b>, <b>groupName</b>, <b>projectTitle</b>, <b>projectDescription</b>, <b>fileUrl</b>, <b>internalGuideEmail</b>, <b>externalGuideName</b>, <b>studentEmail</b><br/>
-                                <strong>Important:</strong> Each row represents one student. Students with the same <b>groupNo</b> will be grouped together automatically. <strong>Note:</strong> Course code is automatically detected from the course you're uploading to.
-                            </p>
+                            <ul className="list-disc pl-5 text-sm text-gray-600 mt-2 space-y-1">
+                                <li>CSV columns: <b>groupNo</b>, <b>groupName</b>, <b>projectTitle</b>, <b>projectDescription</b>, <b>fileUrl</b>, <b>internalGuideEmail</b>, <b>externalGuideName</b>, <b>studentEmail</b></li>
+                                <li>Each row represents one student; same <b>groupNo</b> are grouped together automatically</li>
+                                <li>Course code is auto-detected from the selected course</li>
+                                <li>Accepted file type: <b>.csv</b> (max ~10MB)</li>
+                            </ul>
                             <form onSubmit={handleUpload} className="mt-4 space-y-4">
-                                {/* Single upload to /api/faculty/upload-groups */}
-                                <div>
-                                    <label htmlFor="file-upload" className="sr-only">Choose file</label>
+                                {/* Dropzone */}
+                                <div
+                                    onDragOver={handleDragOver}
+                                    onDragEnter={handleDragOver}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={handleDrop}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className={`border-2 border-dashed rounded-lg p-10 text-center transition-colors cursor-pointer ${
+                                        isDragging ? 'border-blue-400 bg-blue-50/50' : 'border-gray-300 hover:border-blue-300'
+                                    }`}
+                                >
+                                    <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />
+                                    <div className="mt-3">
+                                        <span className="text-blue-600 font-medium">Upload a file</span>
+                                        <div className="text-xs text-gray-500">CSV up to 10MB</div>
+                                    </div>
                                     <input
                                         id="file-upload"
                                         type="file"
                                         accept=".csv"
                                         onChange={handleFileChange}
                                         ref={fileInputRef}
-                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                        className="hidden"
                                     />
-                                    {file && (
-                                        <div className="mt-2 text-sm text-green-600">
-                                            ✓ File selected: {file.name} ({Math.round(file.size / 1024)} KB)
-                                        </div>
-                                    )}
-                                    {csvPreview.length > 0 && (
+                                </div>
+                                {file && (
+                                    <div className="mt-1 text-sm text-gray-700">
+                                        Selected: <span className="font-medium">{file.name}</span> <span className="text-gray-500">({Math.round(file.size / 1024)} KB)</span>
+                                    </div>
+                                )}
+                                {csvPreview.length > 0 && (
                                         <div className="mt-2 text-sm text-blue-600">
                                             ✓ CSV parsed: {csvPreview.length} rows loaded
                                             <button 
@@ -253,7 +347,6 @@ const CourseDetailsPage = () => {
                                             </button>
                                         </div>
                                     )}
-                                </div>
                                 {/* CSV Preview Table */}
                                 {csvPreview.length > 0 && (
                                     <div className="space-y-4">
@@ -340,54 +433,8 @@ const CourseDetailsPage = () => {
                             </form>
                         </div>
                     </div>
-                    {/* Project Groups Display */}
-                    <div>
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4">Project Groups</h2>
-                        <div className="p-6 bg-white rounded-xl shadow">
-                            {loadingGroups ? (
-                                <div className="text-gray-500">Loading project groups...</div>
-                            ) : groupsError ? (
-                                <div className="text-red-500">{groupsError}</div>
-                            ) : groups.length === 0 ? (
-                                <div className="text-gray-500">No project groups assigned yet.</div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {groups.map((group, idx) => (
-                                        <div key={group.id || idx} className="bg-white rounded-lg border shadow-sm p-4">
-                                            <div className="flex items-center justify-between mb-1">
-                                                <div className="font-semibold text-gray-900">Group {group.groupNo}</div>
-                                                {group.groupName && (
-                                                    <div className="text-sm text-gray-600">{group.groupName}</div>
-                                                )}
-                                            </div>
-                                            <div className="text-gray-800 mb-1">
-                                                <span className="font-medium">Project:</span> {group.title || group.projectName}
-                                            </div>
-                                            {group.externalGuideName && (
-                                                <div className="text-gray-700 text-sm mb-2">
-                                                    <span className="font-medium">External Guide:</span> {group.externalGuideName}
-                                                </div>
-                                            )}
-                                            <div className="text-gray-700 text-sm mb-1">Students:</div>
-                                            <ul className="list-disc ml-6 text-sm space-y-1">
-                                                {Array.isArray(group.participants) && group.participants.length > 0 ? (
-                                                    group.participants.map((p, i) => {
-                                                        const stu = p.student || {};
-                                                        const display = stu.name ? `${stu.name} (${stu.email})` : (stu.email || p.studentId);
-                                                        return <li key={i}>{display}</li>;
-                                                    })
-                                                ) : (
-                                                    (group.studentIds ? group.studentIds.split(',') : []).map((sid, i) => (
-                                                        <li key={i}>{sid}</li>
-                                                    ))
-                                                )}
-                                            </ul>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    
+                    
                 </main>
             </div>
         </div>

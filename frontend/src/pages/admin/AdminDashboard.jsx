@@ -115,7 +115,7 @@ const AdminDashboard = () => {
                 <table className="w-full text-sm text-left text-gray-700">
                   <thead className="bg-blue-50 text-xs text-gray-600 uppercase">
                     <tr>
-                      {['Course Code', 'Name', 'Semester', 'Year', 'Status'].map((header) => (
+                      {['Course Code', 'Name', 'Semester', 'Year'].map((header) => (
                         <th key={header} scope="col" className="px-6 py-3">{header}</th>
                       ))}
                     </tr>
@@ -127,15 +127,6 @@ const AdminDashboard = () => {
                         <td className="px-6 py-4">{course.name}</td>
                         <td className="px-6 py-4">{course.semester}</td>
                         <td className="px-6 py-4">{course.year}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                            course.active 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                          }`}>
-                            {course.active ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
                       </tr>
                     ))}
                   </tbody>

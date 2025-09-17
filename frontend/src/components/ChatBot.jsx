@@ -28,7 +28,7 @@ const Chatbot = () => {
   
   // IMPORTANT: Paste your API key here.
   // In a real production app, this should be handled on a server to keep it secure.
-  const apiKey = "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"; 
+  const apiKey = ""; 
 
   const messagesEndRef = useRef(null);
 
@@ -44,11 +44,7 @@ const Chatbot = () => {
     e.preventDefault();
     if (!userInput.trim() || isLoading) return;
     
-    // // This check ensures the developer has added the key.
-    // if (apiKey === "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") {
-    //     setMessages(prev => [...prev, { role: 'assistant', content: 'API Key not configured. Please add your key to the Chatbot.jsx file.' }]);
-    //     return;
-    // }
+  
 
     const newMessages = [...messages, { role: 'user', content: userInput }];
     setMessages(newMessages);

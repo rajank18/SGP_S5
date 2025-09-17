@@ -7,6 +7,8 @@ import Course from './Course.js';
 import CourseFaculty from './CourseFaculty.js';
 import Project from './Project.js';
 import ProjectParticipant from './ProjectParticipant.js';
+import Rubric from './Rubric.js';
+import Criterion from './Criterion.js';
 
 // --- Define Relationships ---
 
@@ -78,6 +80,26 @@ Project.belongsTo(Course, {
   as: 'course',
 });
 
+// Rubric and Criterion Relationship
+Rubric.hasMany(Criterion, {
+  foreignKey: 'rubricId',
+  as: 'criteria',
+});
+Criterion.belongsTo(Rubric, {
+  foreignKey: 'rubricId',
+  as: 'rubric',
+});
+
+// User (Faculty) and Rubric Relationship (creator)
+User.hasMany(Rubric, {
+  foreignKey: 'creatorId',
+  as: 'createdRubrics',
+});
+Rubric.belongsTo(User, {
+  foreignKey: 'creatorId',
+  as: 'creator',
+});
+
 // --- Add other relationships here as needed ---
 // Example:
 // Course.hasMany(Project, { foreignKey: 'courseId' });
@@ -93,4 +115,6 @@ export {
   CourseFaculty,
   Project,
   ProjectParticipant,
+  Rubric,
+  Criterion,
 };

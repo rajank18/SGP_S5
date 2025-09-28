@@ -15,11 +15,24 @@ const CourseManagement = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCourse, setEditingCourse] = useState(null);
-    const [formData, setFormData] = useState({ name: '', courseCode: '', semester: '', year: new Date().getFullYear(), description: '' });
+    const [formData, setFormData] = useState({ name: '', courseCode: '', semester: '', year: new Date().getFullYear(), description: '', rubricId: '' });
+    const [rubrics, setRubrics] = useState([]);
     const navigate = useNavigate();
 
     // --- All your data fetching and other logic remains unchanged ---
-    useEffect(() => { fetchCourses(); }, []);
+    useEffect(() => { fetchCourses(); fetchRubrics(); }, []);
+
+    const fetchRubrics = async () => {
+        try {
+            const token = localStorage.getItem('prograde_token');
+            const res = await fetch('http://localhost:3001/api/rubrics', { headers: { Authorization: `Bearer ${token}` } });
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok) throw new Error(data.message || 'Failed to fetch rubrics');
+            setRubrics(Array.isArray(data.rubrics) ? data.rubrics : []);
+        } catch (err) {
+            // silent fail in UI; admin can retry opening modal
+        }
+    };
 
     useEffect(() => {
         if (isModalOpen) {
@@ -153,6 +166,23 @@ const CourseManagement = () => {
                                 />
                             </div>
                         ))}
+                        <div>
+                            <Label htmlFor="rubricId" className="block text-sm font-medium text-gray-700 mb-1">Rubric</Label>
+                            <select
+                                id="rubricId"
+                                value={formData.rubricId || ''}
+                                onChange={(e) => setFormData({ ...formData, rubricId: e.target.value ? Number(e.target.value) : null })}
+                                className="w-full border rounded-lg px-3 py-2"
+                            >
+                                <option value="">Select a rubric (optional)</option>
+                                {rubrics.map(r => (
+                                    <option key={r.id} value={r.id}>
+                                        {r.title} {r.isDefault ? '(Default)' : '(Custom)'}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-gray-500 mt-1">Once evaluations start, changing rubric is not recommended.</p>
+                        </div>
                         {/* Styled Buttons - CORRECTED */}
                         <div className="flex gap-4 pt-4">
                             <Button

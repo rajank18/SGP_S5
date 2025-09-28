@@ -1,16 +1,13 @@
 import express from 'express';
 import { authenticateJWT } from '../middleware/auth.js';
-import { listRubrics, getRubricById } from '../controllers/rubric.controller.js';
+import { authenticateAdmin } from '../middleware/adminAuth.js';
+import { listRubrics, getRubricById, createRubric } from '../controllers/rubric.controller.js';
 
 const router = express.Router();
 
 router.get('/', authenticateJWT, listRubrics);
 router.get('/:id', authenticateJWT, getRubricById);
-
-// TEMP: debug route to verify mount (no auth)
-router.get('/__debug/ping', (req, res) => {
-  res.json({ ok: true, route: 'rubrics', time: new Date().toISOString() });
-});
+router.post('/', authenticateAdmin, createRubric);
 
 export default router;
 

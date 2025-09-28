@@ -80,4 +80,48 @@ export const getRubricById = async (req, res) => {
   }
 };
 
+// POST /api/rubrics
+// Creates a custom rubric with criteria. Body: { title, description, criteria: [{name, description, maxScore}] }
+export const createRubric = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      await transaction.rollback();
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { title, description, criteria } = req.body || {};
+    if (!title || !Array.isArray(criteria) || criteria.length === 0) {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'Title and at least one criterion are required' });
+    }
+
+    const rubric = await Rubric.create({
+      title,
+      description: description || null,
+      creatorId: userId,
+      isDefault: false,
+    }, { transaction });
+
+    const criteriaRows = [];
+    for (const c of criteria) {
+      if (!c || !c.name || typeof c.maxScore !== 'number') continue;
+      const created = await Criterion.create({
+        rubricId: rubric.id,
+        name: c.name,
+        description: c.description || null,
+        maxScore: c.maxScore,
+      }, { transaction });
+      criteriaRows.push(created);
+    }
+
+    await transaction.commit();
+    return res.status(201).json({ ...rubric.toJSON(), criteria: criteriaRows });
+  } catch (error) {
+    try { await transaction.rollback(); } catch (_) { /* ignore */ }
+    return res.status(500).json({ message: 'Failed to create rubric', error: error.message });
+  }
+};
+
 

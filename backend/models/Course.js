@@ -12,6 +12,7 @@ const Course = sequelize.define('Course', {
   semester: { type: DataTypes.INTEGER, allowNull: false },
   year: { type: DataTypes.INTEGER, allowNull: false },
   description: { type: DataTypes.TEXT },
+  rubricId: { type: DataTypes.INTEGER, allowNull: true },
 }, { tableName: 'courses', timestamps: true });
 
 export default Course;

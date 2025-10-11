@@ -60,14 +60,8 @@ const Dashboard = () => {
         <div className="bg-gray-100 min-h-screen p-8">
             <div className="max-w-7xl mx-auto">
 
-                <div className="flex items-center justify-between mb-6">
+                <div className="mb-6">
                     <h1 className="text-3xl font-bold text-gray-800">My Assigned Courses</h1>
-                    <button
-                        onClick={() => navigate('/faculty/rubrics')}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg"
-                    >
-                        Rubrics
-                    </button>
                 </div>
                 
                 {error && (

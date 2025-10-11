@@ -13,6 +13,7 @@ import adminRoutes from './routes/admin.route.js';
 import facultyRoutes from './routes/faculty.route.js';
 import studentRoutes from './routes/student.route.js';
 import rubricRoutes from './routes/rubric.route.js';
+import mailRoutes from './routes/mail.route.js';
 
 // Import models index to ensure associations are set up
 import './models/index.js';
@@ -34,6 +35,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/rubrics', rubricRoutes);
+app.use('/api/mail', mailRoutes);
 
 // Health check route
 app.get('/', (req, res) => {

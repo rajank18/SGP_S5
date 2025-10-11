@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, FileText, UserCheck, UserX, Users, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { UploadCloud, FileText, UserCheck, UserX, Users, ChevronDown, ChevronUp, X, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation';
 import Papa from 'papaparse';
@@ -16,6 +16,9 @@ const StudentManagement = () => {
     const [showAll, setShowAll] = useState(false);
     const [showUploadSection, setShowUploadSection] = useState(false);
     const [previewRows, setPreviewRows] = useState([]);
+    const [uploadedCsvData, setUploadedCsvData] = useState(null);
+    const [sendingEmails, setSendingEmails] = useState(false);
+    const [emailResult, setEmailResult] = useState(null);
     const fileInputRef = useRef(null);
 
     useEffect(() => {
@@ -83,6 +86,14 @@ const StudentManagement = () => {
             if (!res.ok) throw new Error(data.message || 'Upload failed');
             setResult(data);
             toast.success('Upload complete!');
+            
+            // Store only newly inserted students for email sending
+            if (data.insertedStudents && data.insertedStudents.length > 0) {
+                setUploadedCsvData(data.insertedStudents);
+            } else {
+                setUploadedCsvData(null);
+            }
+            
             setFile(null);
             setPreviewRows([]);
             fetchStudents();
@@ -90,6 +101,29 @@ const StudentManagement = () => {
             toast.error(err.message);
         } finally {
             setUploading(false);
+        }
+    };
+
+    const handleSendEmails = async () => {
+        setSendingEmails(true);
+        try {
+            const token = localStorage.getItem('prograde_token');
+            const res = await fetch('http://localhost:3001/api/admin/send-emails', {
+                method: 'POST',
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ data: uploadedCsvData }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed to send emails');
+            setEmailResult(data);
+            toast.success('Emails sent successfully!');
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setSendingEmails(false);
         }
     };
 
@@ -244,7 +278,7 @@ const StudentManagement = () => {
                             </form>
 
                             {result && (
-                                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                                <div className="mt-6 p-4 bg-gray-50 rounded-lg space-y-4">
                                     <h3 className="font-semibold text-lg">Upload Summary</h3>
                                     <div className="mt-2 space-y-2 text-sm">
                                         <p className="flex items-center gap-2"><UserCheck className="h-5 w-5 text-green-500" />Inserted: {result.insertedCount}</p>
@@ -258,6 +292,63 @@ const StudentManagement = () => {
                                             </div>
                                         )}
                                     </div>
+                                    
+                                    {/* Send Emails Button */}
+                                    {uploadedCsvData && result.insertedCount > 0 && (
+                                        <div className="pt-4 border-t border-gray-200">
+                                            <Button
+                                                onClick={handleSendEmails}
+                                                disabled={sendingEmails}
+                                                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white inline-flex items-center gap-2"
+                                            >
+                                                {sendingEmails ? (
+                                                    <>
+                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                        Sending Emails...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Mail className="h-4 w-4" />
+                                                        Send Login Credentials via Email ({uploadedCsvData?.length || 0} new students)
+                                                    </>
+                                                )}
+                                            </Button>
+                                            <p className="text-xs text-gray-500 mt-2">
+                                                This will send login credentials to {uploadedCsvData?.length || 0} newly created student{uploadedCsvData?.length !== 1 ? 's' : ''} only (skipped students will not receive emails)
+                                            </p>
+                                        </div>
+                                    )}
+                                    
+                                    {/* Email Results */}
+                                    {emailResult && (
+                                        <div className="pt-4 border-t border-gray-200">
+                                            <h4 className="font-semibold text-md mb-2">Email Sending Results</h4>
+                                            <div className="grid grid-cols-3 gap-3 mb-3">
+                                                <div className="bg-white rounded p-3 shadow-sm">
+                                                    <p className="text-xs text-gray-600">Total</p>
+                                                    <p className="text-xl font-bold text-gray-900">{emailResult.total}</p>
+                                                </div>
+                                                <div className="bg-white rounded p-3 shadow-sm">
+                                                    <p className="text-xs text-gray-600">Successful</p>
+                                                    <p className="text-xl font-bold text-green-600">{emailResult.successful}</p>
+                                                </div>
+                                                <div className="bg-white rounded p-3 shadow-sm">
+                                                    <p className="text-xs text-gray-600">Failed</p>
+                                                    <p className="text-xl font-bold text-red-600">{emailResult.failed}</p>
+                                                </div>
+                                            </div>
+                                            {emailResult.results.failed.length > 0 && (
+                                                <div className="bg-red-50 border border-red-200 rounded p-3">
+                                                    <p className="text-sm font-medium text-red-800 mb-2">Failed to send to:</p>
+                                                    <ul className="text-xs text-red-700 space-y-1">
+                                                        {emailResult.results.failed.map((item, idx) => (
+                                                            <li key={idx}>{item.email} - {item.error}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </CardContent>

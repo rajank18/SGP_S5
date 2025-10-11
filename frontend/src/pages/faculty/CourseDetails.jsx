@@ -155,16 +155,31 @@ const CourseDetailsPage = () => {
             
             const data = await res.json();
             
-            if (!res.ok) throw new Error(data.message || 'File upload failed.');
+            if (!res.ok) {
+                throw new Error(data.message || 'File upload failed.');
+            }
             
-            setUploadSuccess('Project groups created successfully!');
+            // Build success message with details
+            let successMsg = data.message || 'Project groups created successfully!';
+            if (data.projectsCreated !== undefined) {
+                successMsg += ` (${data.projectsCreated} project(s), ${data.participantsAdded} participant(s))`;
+            }
+            if (data.warning) {
+                successMsg += ` Warning: ${data.warning}`;
+                if (data.missingStudents && data.missingStudents.length > 0) {
+                    console.warn('Missing students:', data.missingStudents);
+                }
+            }
+            
+            setUploadSuccess(successMsg);
             setFile(null);
             setCsvPreview([]);
             if (fileInputRef.current) fileInputRef.current.value = '';
             fetchGroups();
-            setTimeout(() => setUploadSuccess(''), 3000);
+            setTimeout(() => setUploadSuccess(''), 5000);
         } catch (err) {
-            setUploadError(err.message);
+            console.error('Upload error:', err);
+            setUploadError(err.message || 'An unexpected error occurred during upload.');
         } finally {
             setUploading(false);
         }
@@ -371,6 +386,11 @@ const CourseDetailsPage = () => {
                                     {uploadError && (
                                         <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                                             <span className="text-red-800 text-sm">{uploadError}</span>
+                                        </div>
+                                    )}
+                                    {uploadSuccess && (
+                                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                            <span className="text-green-800 text-sm">{uploadSuccess}</span>
                                         </div>
                                     )}
                                     <button

@@ -13,7 +13,8 @@ import {
   deleteFaculty,
   getCourseAssignments,
   uploadStudents,
-  getAllStudents
+  getAllStudents,
+  sendStudentEmails
 } from '../controllers/admin.controller.js';
 import { authenticateAdmin } from '../middleware/adminAuth.js';
 
@@ -49,5 +50,8 @@ router.post('/upload-students', authenticateAdmin, uploadStudents);
 
 // Student management
 router.get('/students', authenticateAdmin, getAllStudents);
+
+// Send emails to students
+router.post('/send-emails', authenticateAdmin, sendStudentEmails);
 
 export default router;

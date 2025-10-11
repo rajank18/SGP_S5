@@ -4,7 +4,7 @@ import sequelize from '../config/db.js';
 const Project = sequelize.define('Project', {
   groupNo: { type: DataTypes.INTEGER },
   groupName: { type: DataTypes.STRING },
-  title: { type: DataTypes.STRING, allowNull: false },
+  title: { type: DataTypes.STRING, allowNull: true },
   description: { type: DataTypes.TEXT },
   fileUrl: { type: DataTypes.STRING },
   projectReportUrl: { type: DataTypes.STRING },

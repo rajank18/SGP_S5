@@ -10,6 +10,7 @@ import ProtectedRoute from '../components/auth/ProtectedRoute'
 import AdminRubrics from '../pages/admin/Rubrics'
 import AdminRubricDetails from '../pages/admin/RubricDetails'
 import AdminCustomRubric from '../pages/admin/CustomRubric'
+import SendMailCSV from '../components/SendMailCSV'
 
 const AdminRoutes = () => {
   return (
@@ -24,10 +25,11 @@ const AdminRoutes = () => {
           <Route path="rubrics" element={<AdminRubrics />} />
           <Route path="rubrics/custom" element={<AdminCustomRubric />} />
           <Route path="rubrics/:id" element={<AdminRubricDetails />} />
+          <Route path="bulk-mail" element={<SendMailCSV />} />
         </Route>
       </Route>
     </Routes>
   );
 }
 
-export default AdminRoutes 
+export default AdminRoutes;

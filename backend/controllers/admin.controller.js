@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import csv from 'csv-parser';
 import fs from 'fs';
+import nodemailer from 'nodemailer';
 
 // Create a new course
 export const createCourse = async (req, res) => {
@@ -358,6 +359,7 @@ export const uploadStudents = async (req, res) => {
     const filePath = req.file.path;
     const results = [];
     const skippedEmails = [];
+    const insertedStudents = []; // Track newly inserted students
     let insertedCount = 0;
     let skippedCount = 0;
     try {
@@ -391,9 +393,21 @@ export const uploadStudents = async (req, res) => {
           departmentId: departmentId || null
         });
         insertedCount++;
+        // Store the newly inserted student data (with plain password for email)
+        insertedStudents.push({
+          name,
+          email,
+          password, // Plain password for email
+          departmentId
+        });
       }
       fs.unlinkSync(filePath); // Clean up uploaded file
-      res.json({ insertedCount, skippedCount, skippedEmails });
+      res.json({ 
+        insertedCount, 
+        skippedCount, 
+        skippedEmails,
+        insertedStudents // Return newly inserted students
+      });
     } catch (error) {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
       res.status(500).json({ message: 'Error processing CSV', error: error.message });
@@ -411,5 +425,115 @@ export const getAllStudents = async (req, res) => {
     res.json(students);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching students', error: err.message });
+  }
+};
+
+// Send emails to students with their credentials
+export const sendStudentEmails = async (req, res) => {
+  try {
+    const { data } = req.body;
+
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return res.status(400).json({ message: 'No student data provided' });
+    }
+
+    // Check if email credentials are configured
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      return res.status(500).json({ 
+        message: 'Email credentials not configured. Please set EMAIL_USER and EMAIL_PASS in .env file' 
+      });
+    }
+
+    // Create transporter
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const results = {
+      success: [],
+      failed: [],
+    };
+
+    // Send email to each student
+    for (const student of data) {
+      // Handle both capitalized and lowercase column names
+      const email = student.Email || student.email;
+      const name = student.Name || student.name;
+      const password = student.Password || student.password || 'default123';
+      const studentId = student.StudentID || student.studentId || student.id || 'N/A';
+      
+      // Skip if missing required fields
+      if (!email || !name) {
+        results.failed.push({
+          email: email || 'unknown',
+          name: name || 'unknown',
+          error: 'Missing required fields (email or name)',
+        });
+        continue;
+      }
+
+      try {
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: email,
+          subject: 'Your ProGrade Account Credentials',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+              <h2 style="color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px;">Welcome to ProGrade!</h2>
+              
+              <p style="color: #555; font-size: 16px;">Dear <strong>${name}</strong>,</p>
+              
+              <p style="color: #555; font-size: 14px;">Your account has been successfully created. Below are your login credentials:</p>
+              
+              <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>Student ID:</strong> ${studentId}</p>
+                <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+                <p style="margin: 5px 0;"><strong>Password:</strong> ${password}</p>
+              </div>
+              
+              <p style="color: #555; font-size: 14px;">Please login to the ProGrade portal and change your password immediately for security purposes.</p>
+              
+              <p style="color: #555; font-size: 14px; margin-top: 20px;">If you have any questions or need assistance, please contact your administrator.</p>
+              
+              <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
+              
+              <p style="color: #888; font-size: 12px; text-align: center;">This is an automated email. Please do not reply to this message.</p>
+            </div>
+          `,
+        };
+
+        await transporter.sendMail(mailOptions);
+        results.success.push({
+          email: email,
+          name: name,
+        });
+        console.log(`✓ Email sent to ${email}`);
+      } catch (error) {
+        results.failed.push({
+          email: email,
+          name: name,
+          error: error.message,
+        });
+        console.error(`✗ Failed to send email to ${email}:`, error.message);
+      }
+    }
+
+    res.status(200).json({
+      message: 'Bulk email process completed',
+      total: data.length,
+      successful: results.success.length,
+      failed: results.failed.length,
+      results,
+    });
+  } catch (error) {
+    console.error('Error sending emails:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error.message 
+    });
   }
 };

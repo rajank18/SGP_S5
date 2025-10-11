@@ -1,0 +1,4 @@
+id,name,email,password
+S001,John Doe,john.doe@example.com,TempPass123
+S002,Jane Smith,jane.smith@example.com,TempPass456
+S003,Mike Johnson,mike.johnson@example.com,TempPass789

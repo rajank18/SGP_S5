@@ -95,12 +95,18 @@ export const uploadProjects = async (req, res) => {
         .on('error', reject);
     });
     
-    if (results.length > 0) {
-      // Parsed CSV sample available in memory if needed for debugging
+    if (results.length === 0) {
+      await t.rollback();
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ message: 'CSV file is empty or invalid.' });
     }
+
+    console.log(`Processing ${results.length} rows from CSV`);
 
     // Group students by their project using GroupNo
     const projectsMap = new Map();
+    const missingStudents = [];
+    
     for (const row of results) {
       // Handle both uppercase and lowercase column names for your CSV structure
       const groupNo = row.GroupNo || row.groupNo;
@@ -114,10 +120,12 @@ export const uploadProjects = async (req, res) => {
       
       // Check if we have the minimum required data
       if (!groupNo) {
+        console.log('Skipping row: missing groupNo');
         continue;
       }
       
       if (!studentEmail) {
+        console.log(`Skipping row for group ${groupNo}: missing studentEmail`);
         continue;
       }
       
@@ -125,12 +133,12 @@ export const uploadProjects = async (req, res) => {
         projectsMap.set(groupNo, {
           details: {
             groupNo: groupNo,
-            groupName: groupName,
-            title: projectTitle,
-            description: projectDescription,
-            fileUrl: fileUrl,
-            internalGuideEmail: internalGuideEmail,
-            externalGuideName: externalGuideName,
+            groupName: groupName || null,
+            title: projectTitle || `Project ${groupNo}`,
+            description: projectDescription || null,
+            fileUrl: fileUrl || null,
+            internalGuideEmail: internalGuideEmail || null,
+            externalGuideName: externalGuideName || null,
           },
           students: [],
         });
@@ -139,21 +147,34 @@ export const uploadProjects = async (req, res) => {
       projectsMap.get(groupNo).students.push({ studentEmail: studentEmail });
     }
 
+    if (projectsMap.size === 0) {
+      await t.rollback();
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ message: 'No valid project groups found in CSV.' });
+    }
+
+    console.log(`Found ${projectsMap.size} unique project groups`);
+
+    // Verify course exists
+    const course = await Course.findByPk(courseId);
+    if (!course) {
+      await t.rollback();
+      fs.unlinkSync(filePath);
+      return res.status(404).json({ message: `Course with ID ${courseId} not found.` });
+    }
+
     // Process each project group within the transaction
-    for (const projectData of projectsMap.values()) {
-      // Get the course details from the database
-      const course = await Course.findByPk(courseId);
-      if (!course) {
-        throw new Error(`Course with ID ${courseId} not found.`);
-      }
-      
+    let createdCount = 0;
+    let participantCount = 0;
+    
+    for (const [groupNo, projectData] of projectsMap.entries()) {
       // Find the internal guide's user ID from their email
       let internalGuide = null;
       
       if (projectData.details.internalGuideEmail && projectData.details.internalGuideEmail.includes('@')) {
         // If it's an email, search by email
         internalGuide = await User.findOne({ where: { email: projectData.details.internalGuideEmail, role: 'faculty' } });
-      } else {
+      } else if (projectData.details.internalGuideEmail) {
         // If it's a name, search by name
         internalGuide = await User.findOne({ where: { name: projectData.details.internalGuideEmail, role: 'faculty' } });
       }
@@ -162,9 +183,11 @@ export const uploadProjects = async (req, res) => {
         // Use the logged-in faculty as the internal guide
         internalGuide = await User.findOne({ where: { id: req.user.id, role: 'faculty' } });
         if (!internalGuide) {
-          throw new Error(`Could not find internal guide and logged-in user is not faculty`);
+          await t.rollback();
+          fs.unlinkSync(filePath);
+          return res.status(403).json({ message: 'Logged-in user is not a faculty member.' });
         }
-        // Using logged-in faculty as internal guide
+        console.log(`Using logged-in faculty as internal guide for group ${groupNo}`);
       }
 
       // Create the Project record
@@ -179,22 +202,41 @@ export const uploadProjects = async (req, res) => {
         courseId: courseId,
       }, { transaction: t });
 
+      createdCount++;
+      console.log(`Created project for group ${groupNo}`);
+
       // Create ProjectParticipant records for each student
       for (const student of projectData.students) {
-        const studentUser = await User.findOne({ where: { email: student.studentEmail } });
+        const studentUser = await User.findOne({ where: { email: student.studentEmail, role: 'student' } });
         if (!studentUser) {
-          throw new Error(`Student with email ${student.studentEmail} not found.`);
+          missingStudents.push(student.studentEmail);
+          console.log(`Warning: Student ${student.studentEmail} not found in database`);
+          continue; // Skip this student but continue with others
         }
         await ProjectParticipant.create({
           projectId: newProject.id,
           studentId: studentUser.id,
         }, { transaction: t });
+        participantCount++;
       }
     }
 
     // If everything succeeded, commit the transaction
     await t.commit();
-    res.status(201).json({ message: 'CSV processed and projects created successfully!' });
+    
+    const responseMessage = {
+      message: 'CSV processed successfully!',
+      projectsCreated: createdCount,
+      participantsAdded: participantCount,
+    };
+    
+    if (missingStudents.length > 0) {
+      responseMessage.warning = `${missingStudents.length} student(s) not found in database`;
+      responseMessage.missingStudents = missingStudents;
+    }
+    
+    console.log('Upload completed successfully:', responseMessage);
+    res.status(201).json(responseMessage);
 
   } catch (error) {
     // If any step failed, roll back all database changes
@@ -203,7 +245,9 @@ export const uploadProjects = async (req, res) => {
     res.status(500).json({ message: 'Failed to process file.', error: error.message });
   } finally {
     // Clean up by deleting the temporary uploaded file
-    fs.unlinkSync(filePath);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
   }
 };
 

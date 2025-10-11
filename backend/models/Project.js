@@ -7,6 +7,8 @@ const Project = sequelize.define('Project', {
   title: { type: DataTypes.STRING, allowNull: false },
   description: { type: DataTypes.TEXT },
   fileUrl: { type: DataTypes.STRING },
+  projectReportUrl: { type: DataTypes.STRING },
+  presentationUrl: { type: DataTypes.STRING },
   internalGuideId: { type: DataTypes.INTEGER },
   externalGuideName: { type: DataTypes.STRING },
   courseId: { type: DataTypes.INTEGER, allowNull: false }

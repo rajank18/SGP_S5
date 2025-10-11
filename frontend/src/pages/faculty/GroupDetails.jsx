@@ -118,6 +118,40 @@ const GroupDetailsPage = () => {
                             <div className="text-gray-600">No file URL provided yet.</div>
                         )}
                     </section>
+
+                    <section className="bg-white rounded-xl shadow p-6">
+                        <h2 className="text-lg font-semibold text-gray-800 mb-2">Project Report (PDF)</h2>
+                        {project.projectReportUrl ? (
+                            <a
+                                href={project.projectReportUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 break-all"
+                            >
+                                <ExternalLink className="h-4 w-4" />
+                                {project.projectReportUrl}
+                            </a>
+                        ) : (
+                            <div className="text-gray-600">No project report uploaded yet.</div>
+                        )}
+                    </section>
+
+                    <section className="bg-white rounded-xl shadow p-6">
+                        <h2 className="text-lg font-semibold text-gray-800 mb-2">Presentation (PPT)</h2>
+                        {project.presentationUrl ? (
+                            <a
+                                href={project.presentationUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 break-all"
+                            >
+                                <ExternalLink className="h-4 w-4" />
+                                {project.presentationUrl}
+                            </a>
+                        ) : (
+                            <div className="text-gray-600">No presentation uploaded yet.</div>
+                        )}
+                    </section>
                 </main>
             </div>
         </div>

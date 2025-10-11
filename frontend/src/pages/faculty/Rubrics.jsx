@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation'
 
 const Rubrics = () => {
   const [rubrics, setRubrics] = useState([])
@@ -40,6 +41,7 @@ const Rubrics = () => {
   return (
     <div className="bg-gray-100 min-h-screen p-8">
       <div className="max-w-7xl mx-auto">
+        <BreadcrumbNavigation />
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Rubrics</h1>
         </div>

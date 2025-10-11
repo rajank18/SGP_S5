@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import BackButton from '@/components/ui/BackButton';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion'
 
 const Dashboard = () => {
     const [assignedCourses, setAssignedCourses] = useState([]);
@@ -88,10 +89,14 @@ const Dashboard = () => {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {assignedCourses.map((course, index) => (
-                            <div
+                            <motion.div
                                 key={course.id || index}
-                                className="bg-white rounded-xl shadow-md p-6 flex flex-col justify-between hover:shadow-lg transition-shadow cursor-pointer"
+                                className="bg-white rounded-xl shadow-sm p-6 flex flex-col justify-between hover:shadow-md transition-all cursor-pointer border border-transparent hover:border-blue-200"
                                 onClick={() => navigate(`/faculty/courses/${encodeURIComponent(course.courseCode)}`)}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.25, delay: 0.03 * index }}
+                                whileHover={{ y: -2 }}
                             >
                                 <div>
                                     <h3 className="text-lg font-bold text-gray-800">{course.name}</h3>
@@ -105,7 +110,7 @@ const Dashboard = () => {
                                         Assigned Course
                                     </span>
                                 </div>
-                            </div>
+                            </motion.div>
                         ))}
                     </div>
                 )}

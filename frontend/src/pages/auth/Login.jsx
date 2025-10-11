@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+// import { BackgroundLines } from "@/components/ui/background-lines";
 
 // --- No changes to the API hook ---
 const useAuthApi = () => {
@@ -47,6 +48,9 @@ const Login = () => {
             setIsSuccess(true);
             localStorage.setItem('prograde_token', data.token);
             localStorage.setItem('prograde_user', JSON.stringify(data.user));
+            if (data?.user?.role) {
+                localStorage.setItem('prograde_role', data.user.role);
+            }
             setTimeout(() => {
                 if (data.user.role === 'admin') {
                     navigate('/admin/dashboard');
@@ -82,9 +86,11 @@ const Login = () => {
     // --- UPDATED JSX FOR A CLEANER, TRANSPARENT DESIGN ---
     return (
         <div className='bg-gradient-to-br from-[#abd2ff] via-[#639bdb] to-[#2b7fff] min-h-screen flex items-center justify-center p-4 text-white font-sans'>
-            <div className="w-full max-w-4xl mx-auto">
-                {/* Main container with a more subtle blur and border */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 bg-black/20 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden border border-white/10">
+            <div className="w-full max-w-4xl mx-auto relative">
+                {/* Lines sit behind the card but inside the blue gradient */}
+                {/* <BackgroundLines className="rounded-2xl"> */}
+                    {/* Main container with a more subtle blur and border */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 bg-black/20 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden border border-white/10">
                     
                     {/* Left Column: Login Form */}
                     <div className="p-8 md:p-12 flex flex-col justify-center">
@@ -167,7 +173,8 @@ const Login = () => {
                         </motion.div>
                     </div>
 
-                </div>
+                    </div>
+                {/* </BackgroundLines> */}
             </div>
         </div>
     );

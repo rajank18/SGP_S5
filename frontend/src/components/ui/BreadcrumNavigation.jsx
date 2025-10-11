@@ -2,7 +2,7 @@ import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Home, ChevronRight } from 'lucide-react';
 
-const BreadcrumbNavigation = () => {
+const BreadcrumbNavigation = ({ lastLabel }) => {
   const location = useLocation();
   const pathnames = location.pathname.split('/').filter((x) => x);
 
@@ -16,6 +16,9 @@ const BreadcrumbNavigation = () => {
     faculty: 'Faculty',
     assignments: 'Assignments',
     students: 'Students',
+    rubrics: 'Rubrics',
+    custom: 'Custom Rubric',
+    
   };
 
   return (
@@ -43,7 +46,7 @@ const BreadcrumbNavigation = () => {
           <React.Fragment key={to}>
             <ChevronRight className="h-4 w-4 mx-1" />
             {isLast ? (
-              <span className="font-medium text-gray-700">{displayName}</span>
+              <span className="font-medium text-gray-700">{lastLabel || displayName}</span>
             ) : (
               <Link to={to} className="hover:text-blue-600">
                 {displayName}

@@ -4,26 +4,29 @@ import { useNavigate } from 'react-router-dom';
 import { BookOpen, Users, ClipboardList, UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumNavigation'; // Import the new component
+import { motion } from 'framer-motion'
 
-// StatCard component remains the same
-const StatCard = ({ title, value, icon: Icon, iconBgColor, onClick }) => (
-  <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-blue-50" onClick={onClick}>
-    <CardContent className="p-4 flex items-center gap-4">
-      <div className={`p-3 rounded-full ${iconBgColor}`}>
-        <Icon className="h-6 w-6 text-white" />
-      </div>
-      <div>
-        <p className="text-sm font-medium text-gray-500">{title}</p>
-        <p className="text-2xl font-bold text-gray-800">{value}</p>
-      </div>
-    </CardContent>
-  </Card>
+const StatCard = ({ title, value, icon: Icon, iconBgColor, onClick, delay = 0 }) => (
+  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay }}>
+    <Card className="shadow-sm hover:shadow-md transition-all cursor-pointer bg-blue-50 border border-transparent hover:border-blue-200" onClick={onClick}>
+      <CardContent className="p-4 flex items-center gap-4">
+        <div className={`p-3 rounded-full ${iconBgColor}`}>
+          <Icon className="h-6 w-6 text-white" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-gray-500">{title}</p>
+          <p className="text-2xl font-bold text-gray-800">{value}</p>
+        </div>
+      </CardContent>
+    </Card>
+  </motion.div>
 );
 
 const AdminDashboard = () => {
   const [courses, setCourses] = useState([]);
   const [faculty, setFaculty] = useState([]);
   const [assignments, setAssignments] = useState([]);
+  const [rubricsCount, setRubricsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -36,15 +39,18 @@ const AdminDashboard = () => {
     try {
       const token = localStorage.getItem('prograde_token');
       const headers = { Authorization: `Bearer ${token}` };
-      const [coursesRes, facultyRes, assignmentsRes] = await Promise.all([
+      const [coursesRes, facultyRes, assignmentsRes, rubricsRes] = await Promise.all([
         fetch('http://localhost:3001/api/admin/courses', { headers }),
         fetch('http://localhost:3001/api/admin/faculty', { headers }),
-        fetch('http://localhost:3001/api/admin/course-assignments', { headers })
+        fetch('http://localhost:3001/api/admin/course-assignments', { headers }),
+        fetch('http://localhost:3001/api/rubrics', { headers }),
       ]);
       setCourses(await coursesRes.json());
       setFaculty(await facultyRes.json());
       const assignmentData = await assignmentsRes.json();
+      const rubricsData = await rubricsRes.json();
       setAssignments(assignmentData.assignments || []);
+      setRubricsCount((rubricsData?.rubrics || []).length);
     } catch (error) {
       toast.error("Failed to load dashboard data");
     } finally {
@@ -79,6 +85,7 @@ const AdminDashboard = () => {
             icon={BookOpen} 
             iconBgColor="bg-blue-500" 
             onClick={() => navigate('/admin/courses')} 
+            delay={0.02}
           />
           <StatCard 
             title="Faculty" 
@@ -86,6 +93,7 @@ const AdminDashboard = () => {
             icon={Users} 
             iconBgColor="bg-emerald-500"
             onClick={() => navigate('/admin/faculty')} 
+            delay={0.02}
           />
           <StatCard 
             title="Assignments" 
@@ -93,6 +101,15 @@ const AdminDashboard = () => {
             icon={ClipboardList} 
             iconBgColor="bg-purple-500"
             onClick={() => navigate('/admin/assignments')} 
+            delay={0.02}
+          />
+          <StatCard 
+            title="Rubrics" 
+            value={rubricsCount}
+            icon={ClipboardList} 
+            iconBgColor="bg-indigo-500"
+            onClick={() => navigate('/admin/rubrics')} 
+            delay={0.02}
           />
           <StatCard 
             title="Bulk Upload" 
@@ -100,6 +117,7 @@ const AdminDashboard = () => {
             icon={UserPlus} 
             iconBgColor="bg-pink-500"
             onClick={() => navigate('/admin/students')} 
+            delay={0.02}
           />
         </div>
 

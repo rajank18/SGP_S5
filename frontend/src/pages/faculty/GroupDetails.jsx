@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, ClipboardCheck } from 'lucide-react';
 
 const GroupDetailsPage = () => {
     const { courseCode, groupNo } = useParams();
@@ -62,12 +62,21 @@ const GroupDetailsPage = () => {
                             <div className="text-gray-600">Group {project.groupNo}{project.groupName ? ` • ${project.groupName}` : ''}</div>
                             <div className="text-sm text-gray-500 mt-1">Course: {course.name} ({course.courseCode})</div>
                         </div>
-                        <button
-                            className="text-blue-600 hover:text-blue-700"
-                            onClick={() => navigate(`/faculty/courses/${encodeURIComponent(course.courseCode)}`)}
-                        >
-                            Back to course
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                                onClick={() => navigate(`/faculty/courses/${course.id}/projects/${project.id}/evaluate`)}
+                            >
+                                <ClipboardCheck className="h-4 w-4" />
+                                Evaluate Project
+                            </button>
+                            <button
+                                className="text-blue-600 hover:text-blue-700"
+                                onClick={() => navigate(`/faculty/courses/${encodeURIComponent(course.courseCode)}`)}
+                            >
+                                Back to course
+                            </button>
+                        </div>
                     </div>
                 </header>
 

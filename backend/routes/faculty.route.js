@@ -5,8 +5,13 @@ import { authenticateJWT } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Configure multer for file uploads. It will save files to a temporary 'uploads/' directory.
-const upload = multer({ dest: 'uploads/' });
+// Configure multer to use memory storage (no disk storage)
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
 
 // --- EXISTING ROUTE ---
 // This route fetches the courses assigned to the logged-in faculty.

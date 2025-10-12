@@ -1,5 +1,5 @@
-import fs from 'fs';
 import csv from 'csv-parser';
+import { Readable } from 'stream';
 import sequelize from '../config/db.js';
 import CourseFaculty from '../models/CourseFaculty.js';
 import Course from '../models/Course.js';
@@ -82,13 +82,12 @@ export const uploadProjects = async (req, res) => {
   }
 
   const results = [];
-  const filePath = req.file.path;
   const t = await sequelize.transaction(); // Start a database transaction
 
   try {
     // This promise-based approach ensures we wait for the file to be fully read.
     await new Promise((resolve, reject) => {
-      fs.createReadStream(filePath)
+      Readable.from(req.file.buffer)
         .pipe(csv())
         .on('data', (data) => results.push(data))
         .on('end', resolve)
@@ -97,7 +96,6 @@ export const uploadProjects = async (req, res) => {
     
     if (results.length === 0) {
       await t.rollback();
-      fs.unlinkSync(filePath);
       return res.status(400).json({ message: 'CSV file is empty or invalid.' });
     }
 
@@ -149,7 +147,6 @@ export const uploadProjects = async (req, res) => {
 
     if (projectsMap.size === 0) {
       await t.rollback();
-      fs.unlinkSync(filePath);
       return res.status(400).json({ message: 'No valid project groups found in CSV.' });
     }
 
@@ -159,36 +156,39 @@ export const uploadProjects = async (req, res) => {
     const course = await Course.findByPk(courseId);
     if (!course) {
       await t.rollback();
-      fs.unlinkSync(filePath);
       return res.status(404).json({ message: `Course with ID ${courseId} not found.` });
+    }
+
+    // Get the logged-in faculty details
+    const loggedInFaculty = await User.findOne({ where: { id: req.user.id, role: 'faculty' } });
+    if (!loggedInFaculty) {
+      await t.rollback();
+      return res.status(403).json({ message: 'Logged-in user is not a faculty member.' });
     }
 
     // Process each project group within the transaction
     let createdCount = 0;
     let participantCount = 0;
+    let skippedCount = 0;
     
     for (const [groupNo, projectData] of projectsMap.entries()) {
-      // Find the internal guide's user ID from their email
-      let internalGuide = null;
+      // Check if this group is assigned to the logged-in faculty
+      const internalGuideEmail = projectData.details.internalGuideEmail;
       
-      if (projectData.details.internalGuideEmail && projectData.details.internalGuideEmail.includes('@')) {
-        // If it's an email, search by email
-        internalGuide = await User.findOne({ where: { email: projectData.details.internalGuideEmail, role: 'faculty' } });
-      } else if (projectData.details.internalGuideEmail) {
-        // If it's a name, search by name
-        internalGuide = await User.findOne({ where: { name: projectData.details.internalGuideEmail, role: 'faculty' } });
-      }
-      
-      if (!internalGuide) {
-        // Use the logged-in faculty as the internal guide
-        internalGuide = await User.findOne({ where: { id: req.user.id, role: 'faculty' } });
-        if (!internalGuide) {
-          await t.rollback();
-          fs.unlinkSync(filePath);
-          return res.status(403).json({ message: 'Logged-in user is not a faculty member.' });
+      // Skip this group if it has a different faculty assigned
+      if (internalGuideEmail) {
+        const normalizedEmail = internalGuideEmail.toLowerCase().trim();
+        const loggedInEmail = loggedInFaculty.email.toLowerCase().trim();
+        
+        if (normalizedEmail !== loggedInEmail) {
+          console.log(`Skipping group ${groupNo}: assigned to different faculty (${internalGuideEmail})`);
+          skippedCount++;
+          continue;
         }
-        console.log(`Using logged-in faculty as internal guide for group ${groupNo}`);
       }
+      
+      // Use the logged-in faculty as the internal guide
+      const internalGuide = loggedInFaculty;
 
       // Create the Project record
       const newProject = await Project.create({
@@ -228,7 +228,12 @@ export const uploadProjects = async (req, res) => {
       message: 'CSV processed successfully!',
       projectsCreated: createdCount,
       participantsAdded: participantCount,
+      groupsSkipped: skippedCount,
     };
+    
+    if (skippedCount > 0) {
+      responseMessage.info = `${skippedCount} group(s) skipped (assigned to other faculty)`;
+    }
     
     if (missingStudents.length > 0) {
       responseMessage.warning = `${missingStudents.length} student(s) not found in database`;
@@ -243,11 +248,6 @@ export const uploadProjects = async (req, res) => {
     await t.rollback();
     console.error('Upload process failed:', error);
     res.status(500).json({ message: 'Failed to process file.', error: error.message });
-  } finally {
-    // Clean up by deleting the temporary uploaded file
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
   }
 };
 
@@ -257,12 +257,10 @@ export const uploadGroups = async (req, res) => {
     return res.status(400).json({ message: 'No file uploaded' });
   }
 
-  const filePath = req.file.path;
   const tokenUserId = req.user?.id;
   const tokenUserEmail = req.user?.email?.toLowerCase()?.trim();
 
   if (!tokenUserId || !tokenUserEmail) {
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
@@ -288,14 +286,13 @@ export const uploadGroups = async (req, res) => {
     // fallthrough handled below
   }
   if (!facultyUser) {
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     return res.status(403).json({ message: 'Authenticated user is not a faculty or not found' });
   }
 
   const rows = [];
   try {
     await new Promise((resolve, reject) => {
-      fs.createReadStream(filePath)
+      Readable.from(req.file.buffer)
         .pipe(csv())
         .on('data', (row) => rows.push(row))
         .on('end', resolve)
@@ -387,7 +384,5 @@ export const uploadGroups = async (req, res) => {
     res.json({ createdProjects, addedParticipants, skippedRows, skippedByReason });
   } catch (err) {
     res.status(500).json({ message: 'Failed to process CSV', error: err.message });
-  } finally {
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   }
 };

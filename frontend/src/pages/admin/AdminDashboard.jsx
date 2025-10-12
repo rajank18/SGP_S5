@@ -96,7 +96,7 @@ const AdminDashboard = () => {
             delay={0.02}
           />
           <StatCard 
-            title="Assignments" 
+            title="Course Assignments" 
             value={assignments.length} 
             icon={ClipboardList} 
             iconBgColor="bg-purple-500"
@@ -112,7 +112,7 @@ const AdminDashboard = () => {
             delay={0.02}
           />
           <StatCard 
-            title="Bulk Upload" 
+            title="Upload" 
             value="Students" 
             icon={UserPlus} 
             iconBgColor="bg-pink-500"

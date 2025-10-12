@@ -14,7 +14,7 @@ const BreadcrumbNavigation = ({ lastLabel }) => {
   const breadcrumbNameMap = {
     courses: 'Courses',
     faculty: 'Faculty',
-    assignments: 'Assignments',
+    assignments: 'Course Assignments',
     students: 'Students',
     rubrics: 'Rubrics',
     custom: 'Custom Rubric',

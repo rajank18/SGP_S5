@@ -8,7 +8,9 @@ const Project = sequelize.define('Project', {
   description: { type: DataTypes.TEXT },
   fileUrl: { type: DataTypes.STRING },
   projectReportUrl: { type: DataTypes.STRING },
+  reportPublicId: { type: DataTypes.STRING }, // Cloudinary public ID for report
   presentationUrl: { type: DataTypes.STRING },
+  presentationPublicId: { type: DataTypes.STRING }, // Cloudinary public ID for presentation
   internalGuideId: { type: DataTypes.INTEGER },
   externalGuideName: { type: DataTypes.STRING },
   courseId: { type: DataTypes.INTEGER, allowNull: false }

@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import {
   createCourse,
   getCourses,
@@ -19,6 +20,14 @@ import {
 import { authenticateAdmin } from '../middleware/adminAuth.js';
 
 const router = express.Router();
+
+// Configure multer to use memory storage (no disk storage)
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
 
 // Test route to verify admin access
 router.get('/test', authenticateAdmin, (req, res) => {
@@ -46,7 +55,7 @@ router.delete('/courses/:courseId/faculty/:facultyId', authenticateAdmin, remove
 router.get('/course-assignments', authenticateAdmin, getCourseAssignments);
 
 // Student bulk upload
-router.post('/upload-students', authenticateAdmin, uploadStudents);
+router.post('/upload-students', authenticateAdmin, upload.single('file'), uploadStudents);
 
 // Student management
 router.get('/students', authenticateAdmin, getAllStudents);

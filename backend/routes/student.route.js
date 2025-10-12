@@ -6,17 +6,15 @@ import { getMyProjects, getProjectDetails, updateMyProject, uploadProjectReport,
 
 const router = express.Router();
 
-// Configure multer for temporary file storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
+// Configure multer to use memory storage (no disk storage)
+const storage = multer.memoryStorage();
+
+const upload = multer({ 
+  storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB limit
   }
 });
-
-const upload = multer({ storage });
 
 // Get all project groups for the logged-in student
 router.get('/projects', authenticateJWT, getMyProjects);

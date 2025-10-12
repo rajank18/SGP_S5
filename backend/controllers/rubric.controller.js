@@ -1,5 +1,7 @@
 import Rubric from '../models/Rubric.js';
 import Criterion from '../models/Criterion.js';
+import CourseRubric from '../models/CourseRubric.js';
+import Evaluation from '../models/Evaluation.js';
 import sequelize from '../config/db.js';
 import { QueryTypes } from 'sequelize';
 
@@ -121,6 +123,52 @@ export const createRubric = async (req, res) => {
   } catch (error) {
     try { await transaction.rollback(); } catch (_) { /* ignore */ }
     return res.status(500).json({ message: 'Failed to create rubric', error: error.message });
+  }
+};
+
+// DELETE /api/rubrics/:id
+// Deletes a rubric (admin only)
+export const deleteRubric = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { id } = req.params;
+    const numericId = parseInt(id, 10);
+    
+    if (Number.isNaN(numericId)) {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'Invalid rubric id' });
+    }
+
+    // Find the rubric
+    const rubric = await Rubric.findByPk(numericId);
+    if (!rubric) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'Rubric not found' });
+    }
+
+    // Check if rubric is being used in evaluations
+    const evaluationCount = await Evaluation.count({ where: { rubricId: numericId } });
+    if (evaluationCount > 0) {
+      await transaction.rollback();
+      return res.status(400).json({ 
+        message: `Cannot delete rubric. It is being used in ${evaluationCount} evaluation(s). Please delete those evaluations first.` 
+      });
+    }
+
+    // Delete associated course rubric assignments
+    await CourseRubric.destroy({ where: { rubricId: numericId }, transaction });
+
+    // Delete associated criteria
+    await Criterion.destroy({ where: { rubricId: numericId }, transaction });
+
+    // Delete the rubric
+    await rubric.destroy({ transaction });
+
+    await transaction.commit();
+    return res.json({ message: 'Rubric deleted successfully' });
+  } catch (error) {
+    try { await transaction.rollback(); } catch (_) { /* ignore */ }
+    return res.status(500).json({ message: 'Failed to delete rubric', error: error.message });
   }
 };
 

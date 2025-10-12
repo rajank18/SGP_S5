@@ -9,6 +9,8 @@ import Project from './Project.js';
 import ProjectParticipant from './ProjectParticipant.js';
 import Rubric from './Rubric.js';
 import Criterion from './Criterion.js';
+import CourseRubric from './CourseRubric.js';
+import Evaluation from './Evaluation.js';
 
 // --- Define Relationships ---
 
@@ -100,11 +102,70 @@ Rubric.belongsTo(User, {
   as: 'creator',
 });
 
-// --- Add other relationships here as needed ---
-// Example:
-// Course.hasMany(Project, { foreignKey: 'courseId' });
-// Project.belongsTo(Course, { foreignKey: 'courseId' });
+// CourseRubric Relationships
+Course.hasMany(CourseRubric, {
+  foreignKey: 'courseId',
+  as: 'assignedRubrics',
+});
+CourseRubric.belongsTo(Course, {
+  foreignKey: 'courseId',
+  as: 'course',
+});
 
+User.hasMany(CourseRubric, {
+  foreignKey: 'facultyId',
+  as: 'rubricAssignments',
+});
+CourseRubric.belongsTo(User, {
+  foreignKey: 'facultyId',
+  as: 'faculty',
+});
+
+Rubric.hasMany(CourseRubric, {
+  foreignKey: 'rubricId',
+  as: 'courseAssignments',
+});
+CourseRubric.belongsTo(Rubric, {
+  foreignKey: 'rubricId',
+  as: 'rubric',
+});
+
+// Evaluation Relationships
+Project.hasMany(Evaluation, {
+  foreignKey: 'projectId',
+  as: 'evaluations',
+});
+Evaluation.belongsTo(Project, {
+  foreignKey: 'projectId',
+  as: 'project',
+});
+
+Course.hasMany(Evaluation, {
+  foreignKey: 'courseId',
+  as: 'evaluations',
+});
+Evaluation.belongsTo(Course, {
+  foreignKey: 'courseId',
+  as: 'course',
+});
+
+Rubric.hasMany(Evaluation, {
+  foreignKey: 'rubricId',
+  as: 'evaluations',
+});
+Evaluation.belongsTo(Rubric, {
+  foreignKey: 'rubricId',
+  as: 'rubric',
+});
+
+User.hasMany(Evaluation, {
+  foreignKey: 'facultyId',
+  as: 'givenEvaluations',
+});
+Evaluation.belongsTo(User, {
+  foreignKey: 'facultyId',
+  as: 'evaluator',
+});
 
 // Export all models and the sequelize instance
 export {
@@ -117,4 +178,6 @@ export {
   ProjectParticipant,
   Rubric,
   Criterion,
+  CourseRubric,
+  Evaluation,
 };

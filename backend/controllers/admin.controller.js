@@ -1,8 +1,7 @@
-import { Course, CourseFaculty, User } from '../models/index.js';
+import { Course, CourseFaculty, User, CourseRubric, Rubric } from '../models/index.js';
 import bcrypt from 'bcryptjs';
-import multer from 'multer';
 import csv from 'csv-parser';
-import fs from 'fs';
+import { Readable } from 'stream';
 import nodemailer from 'nodemailer';
 
 // Create a new course
@@ -89,11 +88,11 @@ export const deleteCourse = async (req, res) => {
     }
 };
 
-// Assign faculty to course
+// Assign faculty to course (with optional rubrics)
 export const assignFaculty = async (req, res) => {
   try {
     const { courseId } = req.params;
-    const { facultyId } = req.body;
+    const { facultyId, rubricIds } = req.body; // rubricIds is optional array
     
     
     // Validate input
@@ -129,9 +128,30 @@ export const assignFaculty = async (req, res) => {
     // Create the assignment
     const assignment = await CourseFaculty.create({ courseId, facultyId });
     
+    // Assign rubrics if provided
+    let assignedRubrics = [];
+    if (rubricIds && Array.isArray(rubricIds) && rubricIds.length > 0) {
+      for (const rubricId of rubricIds) {
+        // Check if rubric exists
+        const rubric = await Rubric.findByPk(rubricId);
+        if (rubric) {
+          // Check if already assigned
+          const existing = await CourseRubric.findOne({
+            where: { courseId, facultyId, rubricId }
+          });
+          if (!existing) {
+            await CourseRubric.create({ courseId, facultyId, rubricId });
+            assignedRubrics.push(rubricId);
+          }
+        }
+      }
+    }
+    
     res.status(201).json({ 
       message: 'Faculty assigned to course successfully',
-      assignment: { courseId, facultyId }
+      assignment: { courseId, facultyId },
+      rubricsAssigned: assignedRubrics.length,
+      rubricIds: assignedRubrics
     });
   } catch (err) {
     console.error('--- ASSIGN FACULTY ERROR ---', err);
@@ -347,72 +367,66 @@ export const getCourseAssignments = async (req, res) => {
 
 // Student bulk upload
 export const uploadStudents = async (req, res) => {
-  // Use multer to handle file upload
-  const upload = multer({ dest: 'uploads/' }).single('file');
-  upload(req, res, async function (err) {
-    if (err) {
-      return res.status(400).json({ message: 'File upload error', error: err.message });
-    }
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
-    }
-    const filePath = req.file.path;
-    const results = [];
-    const skippedEmails = [];
-    const insertedStudents = []; // Track newly inserted students
-    let insertedCount = 0;
-    let skippedCount = 0;
-    try {
-      await new Promise((resolve, reject) => {
-        fs.createReadStream(filePath)
-          .pipe(csv())
-          .on('data', (row) => results.push(row))
-          .on('end', resolve)
-          .on('error', reject);
-      });
-      for (const row of results) {
-        const { name, email, password, departmentId } = row;
-        if (!name || !email || !password) {
-          skippedCount++;
-          skippedEmails.push(email || '(missing email)');
-          continue;
-        }
-        const existing = await User.findOne({ where: { email } });
-        if (existing) {
-          skippedCount++;
-          skippedEmails.push(email);
-          continue;
-        }
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        await User.create({
-          name,
-          email,
-          password: hashedPassword,
-          role: 'student',
-          departmentId: departmentId || null
-        });
-        insertedCount++;
-        // Store the newly inserted student data (with plain password for email)
-        insertedStudents.push({
-          name,
-          email,
-          password, // Plain password for email
-          departmentId
-        });
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+
+  const results = [];
+  const skippedEmails = [];
+  const insertedStudents = []; // Track newly inserted students
+  let insertedCount = 0;
+  let skippedCount = 0;
+  
+  try {
+    await new Promise((resolve, reject) => {
+      Readable.from(req.file.buffer)
+        .pipe(csv())
+        .on('data', (row) => results.push(row))
+        .on('end', resolve)
+        .on('error', reject);
+    });
+    
+    for (const row of results) {
+      const { name, email, password, departmentId } = row;
+      if (!name || !email || !password) {
+        skippedCount++;
+        skippedEmails.push(email || '(missing email)');
+        continue;
       }
-      fs.unlinkSync(filePath); // Clean up uploaded file
-      res.json({ 
-        insertedCount, 
-        skippedCount, 
-        skippedEmails,
-        insertedStudents // Return newly inserted students
+      const existing = await User.findOne({ where: { email } });
+      if (existing) {
+        skippedCount++;
+        skippedEmails.push(email);
+        continue;
+      }
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      await User.create({
+        name,
+        email,
+        password: hashedPassword,
+        role: 'student',
+        departmentId: departmentId || null
       });
-    } catch (error) {
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      res.status(500).json({ message: 'Error processing CSV', error: error.message });
+      insertedCount++;
+      // Store the newly inserted student data (with plain password for email)
+      insertedStudents.push({
+        name,
+        email,
+        password, // Plain password for email
+        departmentId
+      });
     }
-  });
+    
+    res.json({ 
+      insertedCount, 
+      skippedCount, 
+      skippedEmails,
+      insertedStudents // Return newly inserted students
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error processing CSV', error: error.message });
+  }
 };
 
 // Get all students

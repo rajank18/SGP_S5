@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ExternalLink, Trash2 } from 'lucide-react';
+import { ExternalLink, Trash2, Award } from 'lucide-react';
 
 const StudentProjectDetails = () => {
   const { projectId } = useParams();
@@ -176,9 +176,17 @@ const StudentProjectDetails = () => {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{project.title}</h1>
             <div className="text-gray-600">Group {project.groupNo}{project.groupName ? ` • ${project.groupName}` : ''}</div>
-            <div className="text-sm text-gray-500 mt-1">Course: {course.name} ({course.courseCode})</div>
           </div>
-          <button className="text-blue-600 font-bold hover:text-blue-700" onClick={() => navigate('/student/dashboard')}>Back</button>
+          <div className="flex items-center gap-3">
+            <button 
+              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+              onClick={() => navigate(`/student/projects/${projectId}/evaluations`)}
+            >
+              <Award className="h-4 w-4" />
+              View Evaluations
+            </button>
+            <button className="text-blue-600 font-bold hover:text-blue-700" onClick={() => navigate('/student/dashboard')}>Back</button>
+          </div>
         </header>
 
         <main className="space-y-6">
@@ -259,6 +267,7 @@ const StudentProjectDetails = () => {
                     View Uploaded Report
                   </a>
                   <button
+                    type="button"
                     onClick={handleReportDelete}
                     className="p-1 text-red-600 hover:text-red-700 rounded-full hover:bg-red-50"
                     title="Delete Report"
@@ -292,6 +301,7 @@ const StudentProjectDetails = () => {
                     View Uploaded Presentation
                   </a>
                   <button
+                    type="button"
                     onClick={handlePresentationDelete}
                     className="p-1 text-red-600 hover:text-red-700 rounded-full hover:bg-red-50"
                     title="Delete Presentation"

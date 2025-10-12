@@ -4,7 +4,6 @@ import User from '../models/User.js';
 import Course from '../models/Course.js';
 import cloudinary from '../config/cloudinary.js';
 import multer from 'multer';
-import fs from 'fs';
 
 // GET /api/student/projects
 // Returns the list of project groups that the logged-in student belongs to,
@@ -156,19 +155,34 @@ export const uploadProjectReport = async (req, res) => {
       return res.status(400).json({ message: 'Project report already uploaded' });
     }
 
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      resource_type: 'raw',
-      folder: 'prograde/projects/reports',
+    // Upload from buffer (memory) instead of file path
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'raw',
+          folder: 'prograde/projects/reports',
+          public_id: `report_group${project.groupNo}_${Date.now()}`,
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      uploadStream.end(req.file.buffer);
     });
 
-    project.projectReportUrl = result.secure_url;
+    // Generate download URL with proper filename
+    const downloadUrl = cloudinary.url(result.public_id, {
+      resource_type: 'raw',
+      flags: 'attachment',
+      attachment: `Group${project.groupNo}_Report.pdf`
+    });
+
+    project.projectReportUrl = downloadUrl;
     project.reportPublicId = result.public_id;
     await project.save();
 
-    // Clean up temp file
-    fs.unlinkSync(req.file.path);
-
-    res.json({ message: 'Project report uploaded successfully', url: result.secure_url });
+    res.json({ message: 'Project report uploaded successfully', url: downloadUrl });
   } catch (error) {
     console.error('Error uploading project report:', error);
     res.status(500).json({ message: 'Failed to upload project report', error: error.message });
@@ -200,19 +214,37 @@ export const uploadPresentation = async (req, res) => {
       return res.status(400).json({ message: 'Presentation already uploaded' });
     }
 
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      resource_type: 'raw',
-      folder: 'prograde/projects/presentations',
+    // Get file extension from original filename
+    const fileExt = req.file.originalname.split('.').pop();
+
+    // Upload from buffer (memory) instead of file path
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'raw',
+          folder: 'prograde/projects/presentations',
+          public_id: `presentation_group${project.groupNo}_${Date.now()}`,
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      uploadStream.end(req.file.buffer);
     });
 
-    project.presentationUrl = result.secure_url;
+    // Generate download URL with proper filename and extension
+    const downloadUrl = cloudinary.url(result.public_id, {
+      resource_type: 'raw',
+      flags: 'attachment',
+      attachment: `Group${project.groupNo}_Presentation.${fileExt}`
+    });
+
+    project.presentationUrl = downloadUrl;
     project.presentationPublicId = result.public_id;
     await project.save();
 
-    // Clean up temp file
-    fs.unlinkSync(req.file.path);
-
-    res.json({ message: 'Presentation uploaded successfully', url: result.secure_url });
+    res.json({ message: 'Presentation uploaded successfully', url: downloadUrl });
   } catch (error) {
     console.error('Error uploading presentation:', error);
     res.status(500).json({ message: 'Failed to upload presentation', error: error.message });
@@ -240,8 +272,8 @@ export const deleteProjectReport = async (req, res) => {
       return res.status(400).json({ message: 'No report uploaded or public_id not available' });
     }
 
-    // Delete from Cloudinary
-    await cloudinary.uploader.destroy(project.reportPublicId);
+    // Delete from Cloudinary (use resource_type: 'raw' for PDFs)
+    await cloudinary.uploader.destroy(project.reportPublicId, { resource_type: 'raw' });
 
     // Clear fields
     project.projectReportUrl = null;
@@ -276,8 +308,8 @@ export const deletePresentation = async (req, res) => {
       return res.status(400).json({ message: 'No presentation uploaded or public_id not available' });
     }
 
-    // Delete from Cloudinary
-    await cloudinary.uploader.destroy(project.presentationPublicId);
+    // Delete from Cloudinary (use resource_type: 'raw' for PPTs)
+    await cloudinary.uploader.destroy(project.presentationPublicId, { resource_type: 'raw' });
 
     // Clear fields
     project.presentationUrl = null;

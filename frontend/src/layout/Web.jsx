@@ -1,7 +1,7 @@
 import React from 'react'
 import { Outlet } from 'react-router-dom'
 import Header from '../components/header'
-import Chatbot from '@/components/ChatBot'
+// import Chatbot from '@/components/ChatBot'
 
 const Web = () => {
   return (
@@ -10,7 +10,6 @@ const Web = () => {
     <div className="pt-16">
       <Outlet />
     </div>
-    <Chatbot/>
     </>
   )
 }

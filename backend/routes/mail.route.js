@@ -5,16 +5,8 @@ import { sendBulkEmails, testEmailConfig } from '../controllers/mail.controller.
 
 const router = express.Router();
 
-// Configure multer for CSV file upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'students-' + uniqueSuffix + path.extname(file.originalname));
-  },
-});
+// Configure multer to use memory storage (no disk storage)
+const storage = multer.memoryStorage();
 
 // File filter to accept only CSV files
 const fileFilter = (req, file, cb) => {
@@ -26,7 +18,7 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({
-  storage: storage,
+  storage,
   fileFilter: fileFilter,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit

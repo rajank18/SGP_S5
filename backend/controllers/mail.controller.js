@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
-import fs from 'fs';
 import csvParser from 'csv-parser';
+import { Readable } from 'stream';
 
 // Create transporter using environment variables
 const createTransporter = () => {
@@ -22,17 +22,15 @@ export const sendBulkEmails = async (req, res) => {
 
     // Check if email credentials are configured
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      fs.unlinkSync(req.file.path);
       return res.status(500).json({ 
         message: 'Email credentials not configured. Please set EMAIL_USER and EMAIL_PASS in .env file' 
       });
     }
 
-    const filePath = req.file.path;
     const students = [];
 
-    // Parse CSV file
-    fs.createReadStream(filePath)
+    // Parse CSV from buffer
+    const bufferStream = Readable.from(req.file.buffer)
       .pipe(csvParser())
       .on('data', (row) => {
         students.push({
@@ -98,9 +96,6 @@ export const sendBulkEmails = async (req, res) => {
             }
           }
 
-          // Delete the uploaded CSV file after processing
-          fs.unlinkSync(filePath);
-
           res.status(200).json({
             message: 'Bulk email process completed',
             total: students.length,
@@ -109,9 +104,6 @@ export const sendBulkEmails = async (req, res) => {
             results,
           });
         } catch (error) {
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-          }
           console.error('Error sending emails:', error);
           res.status(500).json({ 
             message: 'Error sending emails', 
@@ -120,9 +112,6 @@ export const sendBulkEmails = async (req, res) => {
         }
       })
       .on('error', (error) => {
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
         console.error('Error parsing CSV:', error);
         res.status(500).json({ 
           message: 'Error parsing CSV file', 

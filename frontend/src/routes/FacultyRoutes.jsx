@@ -4,6 +4,7 @@ import Web from '../layout/Web'
 import Dashboard from '../pages/faculty/Dashboard'
 import CourseDetailsPage from '../pages/faculty/CourseDetails'
 import GroupDetailsPage from '../pages/faculty/GroupDetails'
+import ProjectEvaluation from '../pages/faculty/ProjectEvaluation'
 import ProtectedRoute from '../components/auth/ProtectedRoute'
 
 const FacultyRoutes = () => {
@@ -15,6 +16,7 @@ const FacultyRoutes = () => {
           <Route path="csv" element={<CourseDetailsPage />} />
           <Route path="courses/:courseCode" element={<CourseDetailsPage />} />
           <Route path="courses/:courseCode/groups/:groupNo" element={<GroupDetailsPage />} />
+          <Route path="courses/:courseId/projects/:projectId/evaluate" element={<ProjectEvaluation />} />
         </Route>
       </Route>
     </Routes>

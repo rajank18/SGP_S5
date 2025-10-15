@@ -2,19 +2,25 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import { authenticateJWT } from '../middleware/auth.js';
-import { getMyProjects, getProjectDetails, updateMyProject, uploadProjectReport, uploadPresentation, deleteProjectReport, deletePresentation } from '../controllers/student.controller.js';
+import { getMyProjects, getProjectDetails, updateMyProject, uploadProjectReport, uploadPresentation, deleteProjectReport, deletePresentation, uploadWeeklyReport } from '../controllers/student.controller.js';
 
 const router = express.Router();
-
-// Configure multer to use memory storage (no disk storage)
 const storage = multer.memoryStorage();
-
 const upload = multer({ 
   storage,
   limits: {
     fileSize: 50 * 1024 * 1024 // 50MB limit
   }
 });
+// Weekly report upload route
+router.post('/projects/:projectId/upload-weekly-report', authenticateJWT, upload.single('file'), uploadWeeklyReport);
+
+
+
+// Configure multer to use memory storage (no disk storage)
+
+
+
 
 // Get all project groups for the logged-in student
 router.get('/projects', authenticateJWT, getMyProjects);

@@ -1,3 +1,4 @@
+import WeeklyReportsCarousel from '@/components/student/WeeklyReportsCarousel';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ExternalLink, Trash2, Award } from 'lucide-react';
@@ -172,6 +173,8 @@ const StudentProjectDetails = () => {
   return (
     <div className="bg-gray-100 min-h-screen p-8">
       <div className="max-w-5xl mx-auto">
+        {/* Weekly Reports Carousel */}
+        
         <header className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{project.title}</h1>
@@ -249,6 +252,15 @@ const StudentProjectDetails = () => {
               </div>
             </form>
           </section>
+
+          <section className="bg-white rounded-xl shadow p-6">
+            <WeeklyReportsCarousel
+          projectId={projectId}
+          weeklyReports={project.weeklyReportUrls ? (typeof project.weeklyReportUrls === 'string' ? JSON.parse(project.weeklyReportUrls) : project.weeklyReportUrls) : []}
+          token={token}
+          reloadProject={load}
+        />
+        </section>
 
           {/* Project Report Upload Section */}
           <section className="bg-white rounded-xl shadow p-6">

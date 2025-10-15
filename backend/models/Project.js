@@ -13,7 +13,8 @@ const Project = sequelize.define('Project', {
   presentationPublicId: { type: DataTypes.STRING }, // Cloudinary public ID for presentation
   internalGuideId: { type: DataTypes.INTEGER },
   externalGuideName: { type: DataTypes.STRING },
-  courseId: { type: DataTypes.INTEGER, allowNull: false }
+  courseId: { type: DataTypes.INTEGER, allowNull: false },
+  weeklyReportUrls: { type: DataTypes.JSON, allowNull: true }
 }, {
   tableName: 'projects',
   timestamps: true,

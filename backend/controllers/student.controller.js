@@ -1,3 +1,91 @@
+// POST /api/student/projects/:projectId/upload-weekly-report
+// Uploads a weekly report (PDF/PPT) to Cloudinary and updates weeklyReportUrls in the project
+export const uploadWeeklyReport = async (req, res) => {
+  try {
+    console.log('uploadWeeklyReport called', {
+      params: req.params,
+      body: req.body,
+      file: req.file ? { originalname: req.file.originalname, mimetype: req.file.mimetype, size: req.file.size } : null,
+      user: req.user && req.user.id
+    });
+    const { projectId } = req.params;
+    const { week } = req.body;
+    const studentId = req.user.id;
+    const file = req.file;
+
+    if (!file) {
+      console.error('No file uploaded');
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Check project and participant
+    const project = await Project.findByPk(projectId);
+    if (!project) {
+      console.error('Project not found', { projectId });
+      return res.status(404).json({ message: 'Project not found' });
+    }
+    const isParticipant = await ProjectParticipant.findOne({ where: { projectId: project.id, studentId } });
+    if (!isParticipant) {
+      console.error('Not authorized to upload for this project', { projectId, studentId });
+      return res.status(403).json({ message: 'Not authorized to upload for this project' });
+    }
+
+    // Build file name
+    const teamName = project.groupName || `Team${project.groupNo}`;
+  const ext = file.originalname.split('.').pop();
+  const fileType = ext === 'pdf' ? 'pdf' : 'ppt';
+  // Add extension to public_id for raw files
+  const fileName = `${teamName}_weekly_${week}_${fileType}.${ext}`;
+
+      // Upload to Cloudinary using streamifier
+      await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream({
+          folder: `weekly_reports/${teamName}`,
+          public_id: fileName,
+          resource_type: 'raw'
+        }, async (error, uploadResult) => {
+          if (error) {
+            console.error('Cloudinary upload failed', error);
+            res.status(500).json({ message: 'Cloudinary upload failed', error: error.message });
+            return reject(error);
+          }
+          console.log('Cloudinary upload result:', uploadResult);
+          // Update weeklyReportUrls in DB
+          let weeklyReports = project.weeklyReportUrls || [];
+          if (typeof weeklyReports === 'string') {
+            try { weeklyReports = JSON.parse(weeklyReports); } catch (parseErr) {
+              console.error('weeklyReportUrls JSON parse error', parseErr, weeklyReports);
+              weeklyReports = [];
+            }
+          }
+          // Remove any previous entry for this week
+          weeklyReports = weeklyReports.filter(r => r.week !== Number(week));
+          // Use Cloudinary's secure_url for raw file (includes version)
+          const rawUrl = uploadResult.secure_url;
+          https://api.cloudinary.com/v1_1/dtn0cm7fi/raw/download?api_key=293711249649855&attachment=true&audit_context=eyJhY3Rvcl90eXBlIjoidXNlciIsImFjdG9yX2lkIjoiMGZmZTAxMmZlZTE5ZjM3YjljMTg4Njk5ZTdkNGQyNzgiLCJ1c2VyX2V4dGVybmFsX2lkIjoiMjQ5YmFlY2VjZjBmZjEzYWY3ZTgxZWU3OWMwYzZjIiwidXNlcl9jdXN0b21faWQiOiJ0aGViYXRtYW4zOTM0QGdtYWlsLmNvbSIsImNvbXBvbmVudCI6ImNvbnNvbGUifQ%3D%3D&public_id=prograde%2Fprojects%2Freports%2Fcwzooymxd1tronqjvbr2&signature=90895fc44c6319a9e5bc20fea6c80b7573e97c44&source=ml&target_filename=cwzooymxd1tronqjvbr2&timestamp=1760427313&type=upload
+          weeklyReports.push({
+            week: Number(week),
+            url: rawUrl,
+            publicId: uploadResult.public_id,
+            filename: fileName
+          });
+          try {
+            await project.update({ weeklyReportUrls: JSON.stringify(weeklyReports) });
+          } catch (dbErr) {
+            console.error('DB update error', dbErr);
+            res.status(500).json({ message: 'Failed to update weeklyReportUrls', error: dbErr.message });
+            return reject(dbErr);
+          }
+          res.json({ success: true, url: rawUrl, week, filename: fileName });
+          resolve();
+        });
+        streamifier.createReadStream(file.buffer).pipe(uploadStream);
+      });
+  } catch (error) {
+    console.error('uploadWeeklyReport error', error);
+    res.status(500).json({ message: 'Failed to upload weekly report', error: error.message });
+  }
+};
 import Project from '../models/Project.js';
 import ProjectParticipant from '../models/ProjectParticipant.js';
 import User from '../models/User.js';
@@ -96,6 +184,7 @@ export const getProjectDetails = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch project details', error: error.message });
   }
 };
+    import streamifier from 'streamifier';
 
 // PUT /api/student/projects/:projectId
 // Allows a student in the project to update description and fileUrl for the group (single submission per group)

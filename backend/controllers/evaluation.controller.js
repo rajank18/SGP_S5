@@ -57,6 +57,19 @@ export const saveEvaluation = async (req, res) => {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
+    // Validate criteriaMarks items shape
+    for (const item of criteriaMarks) {
+      if (typeof item !== 'object' || (item.criterionId == null)) {
+        await transaction.rollback();
+        return res.status(400).json({ message: 'Invalid criteriaMarks format' });
+      }
+      // ensure numeric marks
+      if (item.marks != null && isNaN(Number(item.marks))) {
+        await transaction.rollback();
+        return res.status(400).json({ message: 'Invalid marks value' });
+      }
+    }
+
     // Verify project exists and belongs to this faculty
     const project = await Project.findOne({
       where: { id: projectId, courseId, internalGuideId: facultyId }
@@ -114,7 +127,6 @@ export const saveEvaluation = async (req, res) => {
     });
   } catch (error) {
     try { await transaction.rollback(); } catch (_) { /* ignore */ }
-    console.error('Error saving evaluation:', error);
     res.status(500).json({ message: 'Failed to save evaluation', error: error.message });
   }
 };

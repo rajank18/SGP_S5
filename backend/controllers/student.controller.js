@@ -32,55 +32,61 @@ export const uploadWeeklyReport = async (req, res) => {
 
     // Build file name
     const teamName = project.groupName || `Team${project.groupNo}`;
-  const ext = file.originalname.split('.').pop();
-  const fileType = ext === 'pdf' ? 'pdf' : 'ppt';
-  // Add extension to public_id for raw files
-  const fileName = `${teamName}_weekly_${week}_${fileType}.${ext}`;
+    const ext = file.originalname.split('.').pop();
+    const fileType = ext === 'pdf' ? 'pdf' : 'ppt';
+    const fileName = `${teamName}_weekly_${week}_${fileType}`;
 
-      // Upload to Cloudinary using streamifier
-      await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream({
-          folder: `weekly_reports/${teamName}`,
-          public_id: fileName,
-          resource_type: 'raw'
-        }, async (error, uploadResult) => {
-          if (error) {
-            console.error('Cloudinary upload failed', error);
-            res.status(500).json({ message: 'Cloudinary upload failed', error: error.message });
-            return reject(error);
-          }
-          console.log('Cloudinary upload result:', uploadResult);
-          // Update weeklyReportUrls in DB
-          let weeklyReports = project.weeklyReportUrls || [];
-          if (typeof weeklyReports === 'string') {
-            try { weeklyReports = JSON.parse(weeklyReports); } catch (parseErr) {
-              console.error('weeklyReportUrls JSON parse error', parseErr, weeklyReports);
-              weeklyReports = [];
-            }
-          }
-          // Remove any previous entry for this week
-          weeklyReports = weeklyReports.filter(r => r.week !== Number(week));
-          // Use Cloudinary's secure_url for raw file (includes version)
-          const rawUrl = uploadResult.secure_url;
-          https://api.cloudinary.com/v1_1/dtn0cm7fi/raw/download?api_key=293711249649855&attachment=true&audit_context=eyJhY3Rvcl90eXBlIjoidXNlciIsImFjdG9yX2lkIjoiMGZmZTAxMmZlZTE5ZjM3YjljMTg4Njk5ZTdkNGQyNzgiLCJ1c2VyX2V4dGVybmFsX2lkIjoiMjQ5YmFlY2VjZjBmZjEzYWY3ZTgxZWU3OWMwYzZjIiwidXNlcl9jdXN0b21faWQiOiJ0aGViYXRtYW4zOTM0QGdtYWlsLmNvbSIsImNvbXBvbmVudCI6ImNvbnNvbGUifQ%3D%3D&public_id=prograde%2Fprojects%2Freports%2Fcwzooymxd1tronqjvbr2&signature=90895fc44c6319a9e5bc20fea6c80b7573e97c44&source=ml&target_filename=cwzooymxd1tronqjvbr2&timestamp=1760427313&type=upload
-          weeklyReports.push({
-            week: Number(week),
-            url: rawUrl,
-            publicId: uploadResult.public_id,
-            filename: fileName
-          });
-          try {
-            await project.update({ weeklyReportUrls: JSON.stringify(weeklyReports) });
-          } catch (dbErr) {
-            console.error('DB update error', dbErr);
-            res.status(500).json({ message: 'Failed to update weeklyReportUrls', error: dbErr.message });
-            return reject(dbErr);
-          }
-          res.json({ success: true, url: rawUrl, week, filename: fileName });
-          resolve();
-        });
-        streamifier.createReadStream(file.buffer).pipe(uploadStream);
+    // Upload to Cloudinary using streamifier
+    const uploadResult = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream({
+        folder: 'prograde/projects/weekly_reports',
+        public_id: `${fileName}_${Date.now()}`,
+        resource_type: 'raw'
+      }, (error, result) => {
+        if (error) {
+          console.error('Cloudinary upload failed', error);
+          reject(error);
+        } else {
+          resolve(result);
+        }
       });
+      streamifier.createReadStream(file.buffer).pipe(uploadStream);
+    });
+
+    console.log('Cloudinary upload result:', uploadResult);
+
+    // Generate download URL with proper filename
+    const downloadUrl = cloudinary.url(uploadResult.public_id, {
+      resource_type: 'raw',
+      flags: 'attachment',
+      attachment: `${teamName}_Week${week}.${ext}`
+    });
+
+    // Update weeklyReportUrls in DB
+    let weeklyReports = project.weeklyReportUrls || [];
+    if (typeof weeklyReports === 'string') {
+      try { 
+        weeklyReports = JSON.parse(weeklyReports); 
+      } catch (parseErr) {
+        console.error('weeklyReportUrls JSON parse error', parseErr, weeklyReports);
+        weeklyReports = [];
+      }
+    }
+
+    // Remove any previous entry for this week
+    weeklyReports = weeklyReports.filter(r => r.week !== Number(week));
+    
+    weeklyReports.push({
+      week: Number(week),
+      url: downloadUrl,
+      publicId: uploadResult.public_id,
+      filename: `${teamName}_Week${week}.${ext}`,
+      uploadedAt: new Date().toISOString()
+    });
+
+    await project.update({ weeklyReportUrls: JSON.stringify(weeklyReports) });
+
+    res.json({ success: true, url: downloadUrl, week, filename: `${teamName}_Week${week}.${ext}` });
   } catch (error) {
     console.error('uploadWeeklyReport error', error);
     res.status(500).json({ message: 'Failed to upload weekly report', error: error.message });
@@ -409,5 +415,51 @@ export const deletePresentation = async (req, res) => {
   } catch (error) {
     console.error('Error deleting presentation:', error);
     res.status(500).json({ message: 'Failed to delete presentation', error: error.message });
+  }
+};
+
+// DELETE /api/student/projects/:projectId/delete-weekly-report/:week
+// Removes a weekly report from Cloudinary and updates the weeklyReportUrls array
+export const deleteWeeklyReport = async (req, res) => {
+  try {
+    const { projectId, week } = req.params;
+    const studentId = req.user.id;
+
+    const project = await Project.findByPk(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const isParticipant = await ProjectParticipant.findOne({ where: { projectId: project.id, studentId } });
+    if (!isParticipant) {
+      return res.status(403).json({ message: 'Not authorized to delete for this project' });
+    }
+
+    let weeklyReports = project.weeklyReportUrls || [];
+    if (typeof weeklyReports === 'string') {
+      try {
+        weeklyReports = JSON.parse(weeklyReports);
+      } catch (parseErr) {
+        console.error('weeklyReportUrls JSON parse error', parseErr);
+        weeklyReports = [];
+      }
+    }
+
+    const reportToDelete = weeklyReports.find(r => r.week === Number(week));
+    if (!reportToDelete || !reportToDelete.publicId) {
+      return res.status(404).json({ message: 'Weekly report not found for this week' });
+    }
+
+    // Delete from Cloudinary
+    await cloudinary.uploader.destroy(reportToDelete.publicId, { resource_type: 'raw' });
+
+    // Remove from array
+    weeklyReports = weeklyReports.filter(r => r.week !== Number(week));
+    await project.update({ weeklyReportUrls: JSON.stringify(weeklyReports) });
+
+    res.json({ message: 'Weekly report deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting weekly report:', error);
+    res.status(500).json({ message: 'Failed to delete weekly report', error: error.message });
   }
 };

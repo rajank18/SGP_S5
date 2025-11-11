@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import { authenticateJWT } from '../middleware/auth.js';
-import { getMyProjects, getProjectDetails, updateMyProject, uploadProjectReport, uploadPresentation, deleteProjectReport, deletePresentation, uploadWeeklyReport } from '../controllers/student.controller.js';
+import { getMyProjects, getProjectDetails, updateMyProject, uploadProjectReport, uploadPresentation, deleteProjectReport, deletePresentation, uploadWeeklyReport, deleteWeeklyReport } from '../controllers/student.controller.js';
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -33,6 +33,7 @@ router.post('/projects/:projectId/upload-presentation', authenticateJWT, upload.
 
 router.delete('/projects/:projectId/delete-report', authenticateJWT, deleteProjectReport);
 router.delete('/projects/:projectId/delete-presentation', authenticateJWT, deletePresentation);
+router.delete('/projects/:projectId/delete-weekly-report/:week', authenticateJWT, deleteWeeklyReport);
 
 router.post('/test', (req, res) => res.json({message: 'Test POST route reached'}));
 

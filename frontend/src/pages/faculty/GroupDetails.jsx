@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ExternalLink, ClipboardCheck } from 'lucide-react';
+import { ExternalLink, ClipboardCheck, FileText, FileDown, Presentation } from 'lucide-react';
 
 const GroupDetailsPage = () => {
     const { courseCode, groupNo } = useParams();
@@ -128,35 +128,112 @@ const GroupDetailsPage = () => {
                         )}
                     </section>
 
+                     <section className="bg-white rounded-xl shadow p-6">
+                        <h2 className="text-lg font-semibold text-gray-800 mb-4">Weekly Reports</h2>
+                        {(() => {
+                            let weeklyReports = [];
+                            try {
+                                if (typeof project.weeklyReportUrls === 'string') {
+                                    weeklyReports = JSON.parse(project.weeklyReportUrls);
+                                } else if (Array.isArray(project.weeklyReportUrls)) {
+                                    weeklyReports = project.weeklyReportUrls;
+                                }
+                            } catch (e) {
+                                console.error('Failed to parse weeklyReportUrls', e);
+                            }
+
+                            if (!weeklyReports || weeklyReports.length === 0) {
+                                return <div className="text-gray-600">No weekly reports uploaded yet.</div>;
+                            }
+
+                            // Sort by week number
+                            const sortedReports = [...weeklyReports].sort((a, b) => a.week - b.week);
+
+                            return (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                    {sortedReports.map((report) => {
+                                        const uploadDate = report.uploadedAt 
+                                            ? new Date(report.uploadedAt).toLocaleDateString('en-IN', {
+                                                day: '2-digit',
+                                                month: 'short',
+                                                year: 'numeric'
+                                            })
+                                            : 'Date not available';
+                                        
+                                        return (
+                                            <div
+                                                key={report.week}
+                                                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                                            >
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <FileText className="h-5 w-5 text-blue-600" />
+                                                    <span className="font-semibold text-gray-800">Week {report.week}</span>
+                                                </div>
+                                                <div className="text-xs text-gray-500 mb-2">
+                                                    Uploaded: {uploadDate}
+                                                </div>
+                                                <a
+                                                    href={report.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 hover:underline break-all"
+                                                >
+                                                    <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                                                    <span className="truncate">{report.filename || `Week ${report.week} Report`}</span>
+                                                </a>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            );
+                        })()}
+                    </section>
+
                     <section className="bg-white rounded-xl shadow p-6">
-                        <h2 className="text-lg font-semibold text-gray-800 mb-2">Project Report (PDF)</h2>
+                        <h2 className="text-lg font-semibold text-gray-800 mb-4">Project Report (PDF)</h2>
                         {project.projectReportUrl ? (
-                            <a
-                                href={project.projectReportUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 break-all"
-                            >
-                                <ExternalLink className="h-4 w-4" />
-                                {project.projectReportUrl}
-                            </a>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <FileDown className="h-5 w-5 text-blue-600" />
+                                        <span className="font-semibold text-gray-800">Project Report</span>
+                                    </div>
+                                    <a
+                                        href={project.projectReportUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 hover:underline break-all"
+                                    >
+                                        <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                                        <span className="truncate">Download Report</span>
+                                    </a>
+                                </div>
+                            </div>
                         ) : (
                             <div className="text-gray-600">No project report uploaded yet.</div>
                         )}
                     </section>
 
                     <section className="bg-white rounded-xl shadow p-6">
-                        <h2 className="text-lg font-semibold text-gray-800 mb-2">Presentation (PPT)</h2>
+                        <h2 className="text-lg font-semibold text-gray-800 mb-4">Presentation (PPT)</h2>
                         {project.presentationUrl ? (
-                            <a
-                                href={project.presentationUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 break-all"
-                            >
-                                <ExternalLink className="h-4 w-4" />
-                                {project.presentationUrl}
-                            </a>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                <div className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Presentation className="h-5 w-5 text-blue-600" />
+                                        <span className="font-semibold text-gray-800">Presentation</span>
+                                    </div>
+                                    <a
+                                        href={project.presentationUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 hover:underline break-all"
+                                    >
+                                        <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                                        <span className="truncate">Download Presentation</span>
+                                    </a>
+                                </div>
+                            </div>
                         ) : (
                             <div className="text-gray-600">No presentation uploaded yet.</div>
                         )}

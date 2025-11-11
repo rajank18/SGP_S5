@@ -211,9 +211,22 @@ export const createFaculty = async (req, res) => {
       departmentId: departmentId || null
     });
 
+    // Import the email function
+    import('../controllers/mail.controller.js').then(mailController => {
+      // Send email with credentials (don't await to avoid blocking the response)
+      mailController.sendFacultyCredentials(email, name, password)
+        .then(sent => {
+          if (!sent) {
+            console.warn(`Failed to send credentials email to ${email}`);
+          }
+        })
+        .catch(err => {
+          console.error('Error in sendFacultyCredentials:', err);
+        });
+    });
 
     res.status(201).json({
-      message: "Faculty created successfully!",
+      message: "Faculty created successfully! Credentials have been sent to the provided email.",
       faculty: { 
         id: newFaculty.id, 
         name: newFaculty.name, 
@@ -224,7 +237,7 @@ export const createFaculty = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('--- CREATE FACULTY ERROR ---', error.stack); // Log full stack
+    console.error('--- CREATE FACULTY ERROR ---', error.stack);
     res.status(500).json({ 
       message: 'An internal server error occurred during faculty creation.',
       error: error.message 

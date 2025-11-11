@@ -14,6 +14,43 @@ const createTransporter = () => {
 };
 
 // Send bulk emails from CSV
+// Send faculty credentials email
+export const sendFacultyCredentials = async (email, name, password) => {
+  try {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.error('Email credentials not configured');
+      return false;
+    }
+
+    const transporter = createTransporter();
+    
+    const mailOptions = {
+      from: `"SGP System" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Your Faculty Account Credentials',
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <h2>Welcome to SGP System</h2>
+          <p>Hello ${name},</p>
+          <p>Your faculty account has been created successfully. Below are your login credentials:</p>
+          <div style="background: #f4f4f4; padding: 10px 15px; border-radius: 5px; margin: 15px 0;">
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Password:</strong> ${password}</p>
+          </div>
+          <p>Please log in and change your password after your first login for security reasons.</p>
+          <p>Best regards,<br>SGP Admin Team</p>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error('Error sending faculty credentials email:', error);
+    return false;
+  }
+};
+
 export const sendBulkEmails = async (req, res) => {
   try {
     if (!req.file) {

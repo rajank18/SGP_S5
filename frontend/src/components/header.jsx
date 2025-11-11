@@ -28,14 +28,8 @@ const Header = () => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#328DFF] text-white flex items-center justify-between px-6 py-3  border-b-black shadow-lg">
-      {/* Hamburger Menu */}
-      <div className="flex-1">
-        <button className="bg-transparent border-none text-white text-2xl cursor-pointer">
-          &#9776;
-        </button>
-      </div>
       {/* Title */}
-      <div className="flex-2 text-center font-bold text-xl tracking-wider">
+      <div className="text-center font-bold text-3xl tracking-wider">
         ProGrade
       </div>
       {/* Profile */}

@@ -299,7 +299,7 @@ const StudentManagement = () => {
                                             <Button
                                                 onClick={handleSendEmails}
                                                 disabled={sendingEmails}
-                                                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white inline-flex items-center gap-2"
+                                                className="bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-600 hover:to-blue-700 text-white inline-flex items-center gap-2"
                                             >
                                                 {sendingEmails ? (
                                                     <>

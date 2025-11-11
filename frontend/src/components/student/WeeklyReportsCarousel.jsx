@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
 
 const MAX_DEFAULT_WEEKS = 5;
 
-export default function WeeklyReportsCarousel({ projectId, weeklyReports = [], token, reloadProject }) {
+export default function WeeklyReportsCarousel({ projectId,project, weeklyReports = [], token, reloadProject }) {
   const [weeks, setWeeks] = useState(() => {
     const maxWeek = Math.max(MAX_DEFAULT_WEEKS, ...weeklyReports.map(r => r.week || 0));
     return Array.from({ length: maxWeek }, (_, i) => i + 1);
@@ -18,6 +18,22 @@ export default function WeeklyReportsCarousel({ projectId, weeklyReports = [], t
   const currentWeek = weeks[currentIdx];
   const report = weeklyReports.find(r => r.week === currentWeek);
 
+  const load = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to load project');
+      setProject(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleAddWeek = () => {
     setWeeks(w => [...w, w.length + 1]);
     setCurrentIdx(weeks.length); // move to new week
@@ -75,6 +91,33 @@ export default function WeeklyReportsCarousel({ projectId, weeklyReports = [], t
     }
   };
 
+  const handleDownload = async (fileUrl, fileName, fileType = '') => {
+    console.log(project);
+    if (!fileUrl) {
+      alert("No file available for download.");
+      return;
+    }
+
+    try {
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error("Failed to download file");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+
+      // Sanitize filename
+      const cleanName = fileName?.replace(/[^\w\s-]/g, '').trim() || 'file';
+      a.download = `${cleanName}${fileType.startsWith('.') ? fileType : fileType ? `.${fileType}` : ''}`;
+
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download error:", error);
+      alert("Failed to download file. Please try again.");
+    }
+  };
   return (
     <Card className="mb-6">
       <CardHeader className="flex items-center gap-4">
@@ -105,7 +148,8 @@ export default function WeeklyReportsCarousel({ projectId, weeklyReports = [], t
           <div className="font-semibold mb-2">Week {currentWeek}</div>
           {report ? (
             <div className="flex flex-col items-center gap-2">
-              <a href={report.url} target="_blank" rel="noopener noreferrer" className="text-green-700 underline mb-2">
+              <a onClick={() => handleDownload(report.url, `Group${project.title}_Week${report.week}_Report`, 'pdf')}
+                rel="noopener noreferrer" className="text-green-700 cursor-pointer underline mb-2">
                 {report.filename}
               </a>
               <button

@@ -43,6 +43,7 @@ const StudentProjectDetails = () => {
     }
   };
 
+
   useEffect(() => { load(); }, [projectId]);
 
   const handleSave = async (e) => {
@@ -164,6 +165,34 @@ const StudentProjectDetails = () => {
     }
   };
 
+  const handleDownload = async (fileUrl, fileName, fileType = '') => {
+    console.log(project);
+    if (!fileUrl) {
+      alert("No file available for download.");
+      return;
+    }
+
+    try {
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error("Failed to download file");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+
+      // Sanitize filename
+      const cleanName = fileName?.replace(/[^\w\s-]/g, '').trim() || 'file';
+      a.download = `${cleanName}${fileType.startsWith('.') ? fileType : fileType ? `.${fileType}` : ''}`;
+
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download error:", error);
+      alert("Failed to download file. Please try again.");
+    }
+  };
+
   if (loading) return <div className="p-8">Loading project...</div>;
   if (error) return <div className="p-8 text-red-500">Error: {error}</div>;
   if (!project) return null;
@@ -171,163 +200,246 @@ const StudentProjectDetails = () => {
   const course = project.course || {};
 
   return (
-    <div className="bg-gray-100 min-h-screen p-8">
-      <div className="max-w-5xl mx-auto">
-        {/* Weekly Reports Carousel */}
-        
-        <header className="flex items-start justify-between mb-6">
+    <div className="bg-gray-50 min-h-screen p-4 md:p-8">
+      <div className="max-w-6xl mx-auto">
+        <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 bg-white p-6 rounded-xl shadow">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{project.title}</h1>
-            <div className="text-gray-600">Group {project.groupNo}{project.groupName ? ` • ${project.groupName}` : ''}</div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{project.title}</h1>
+            <div className="text-gray-600 mt-1">
+              Group {project.groupNo}{project.groupName ? ` • ${project.groupName}` : ''}
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button 
+          <div className="flex flex-wrap gap-3">
+            <button
               className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm"
               onClick={() => navigate(`/student/projects/${projectId}/evaluations`)}
             >
               <Award className="h-4 w-4" />
               View Evaluations
             </button>
-            <button className="text-blue-600 font-bold hover:text-blue-700" onClick={() => navigate('/student/dashboard')}>Back</button>
+            <button 
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              onClick={() => navigate('/student/dashboard')}
+            >
+              Back to Dashboard
+            </button>
           </div>
         </header>
 
         <main className="space-y-6">
+          {/* Students Section - Single Row */}
           <section className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-3">Students</h2>
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Team Members</h2>
             {Array.isArray(project.participants) && project.participants.length > 0 ? (
-              <ul className="divide-y divide-gray-100">
+              <div className="flex flex-wrap gap-4">
                 {project.participants.map((p, i) => {
                   const stu = p.student || {};
                   const name = stu.name || 'Unnamed';
                   const email = stu.email || '—';
+                  const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
+                  
                   return (
-                    <li key={i} className="py-2">
-                      <div className="font-medium text-gray-900">{name}</div>
-                      <div className="text-sm text-gray-600">{email}</div>
-                    </li>
+                    <div key={i} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3 border border-gray-100">
+                      <div className="flex items-center justify-center h-10 w-10 rounded-full bg-blue-100 text-blue-700 font-medium">
+                        {initials}
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">{name}</div>
+                        <div className="text-sm text-gray-500">{email}</div>
+                      </div>
+                    </div>
                   );
                 })}
-              </ul>
+              </div>
             ) : (
-              <div className="text-gray-600">No students listed yet.</div>
+              <div className="text-gray-500 italic">No team members listed yet.</div>
             )}
           </section>
 
-          <section className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">Description</h2>
-            <form onSubmit={handleSave} className="space-y-4">
-              <textarea
-                className="w-full border rounded p-3 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={6}
-                placeholder="Enter your project description..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
+          {/* Description and File URL - Side by Side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Description Card */}
+            <section className="bg-white rounded-xl shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Project Description</h2>
+              <form onSubmit={handleSave} className="h-full flex flex-col">
+                <div className="flex-grow">
+                  <textarea
+                    className="w-full border rounded-lg p-3 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 h-40"
+                    placeholder="Enter your project description..."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
+                <div className="mt-4 flex items-center justify-between">
+                  <button 
+                    type="submit" 
+                    disabled={saving} 
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                  >
+                    {saving ? 'Saving...' : 'Save Description'}
+                  </button>
+                  {saveMsg && <span className="text-sm text-green-600">{saveMsg}</span>}
+                </div>
+              </form>
+            </section>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Project File URL</label>
-                <input
-                  type="url"
-                  className="w-full border rounded p-2 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="https://github.com/student/sgp"
-                  value={fileUrl}
-                  onChange={(e) => setFileUrl(e.target.value)}
-                />
-                {project.fileUrl && (
-                  <div className="mt-2">
-                    <a href={project.fileUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 break-all">
-                      <ExternalLink className="h-4 w-4" />
-                      Current file
-                    </a>
+            {/* File URL Card */}
+            <section className="bg-white rounded-xl shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Project Repository</h2>
+              <form onSubmit={handleSave} className="h-full flex flex-col">
+                <div className="flex-grow">
+                  <div className="space-y-2">
+                    <input
+                      type="url"
+                      className="w-full border rounded-lg p-2 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="https://github.com/username/project"
+                      value={fileUrl}
+                      onChange={(e) => setFileUrl(e.target.value)}
+                    />
+                    {project.fileUrl && (
+                      <div className="mt-2">
+                        <a 
+                          href={project.fileUrl} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 break-all text-sm"
+                        >
+                          <ExternalLink className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate">{project.fileUrl}</span>
+                        </a>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400">
-                  {saving ? 'Saving...' : 'Save' }
-                </button>
-                {saveMsg && <span className="text-sm text-green-600">{saveMsg}</span>}
-              </div>
-            </form>
-          </section>
-
-          <section className="bg-white rounded-xl shadow p-6">
-            <WeeklyReportsCarousel
-          projectId={projectId}
-          weeklyReports={project.weeklyReportUrls ? (typeof project.weeklyReportUrls === 'string' ? JSON.parse(project.weeklyReportUrls) : project.weeklyReportUrls) : []}
-          token={token}
-          reloadProject={load}
-        />
-        </section>
-
-          {/* Project Report Upload Section */}
-          <section className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-3">Project Report (PDF)</h2>
-            <form onSubmit={handleReportUpload} className="space-y-4">
-              <input
-                type="file"
-                accept=".pdf"
-                className="w-full border rounded p-3 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                onChange={(e) => setReportFile(e.target.files[0])}
-              />
-              {project.projectReportUrl && (
-                <div className="mt-2 flex items-center gap-3">
-                  <a href={project.projectReportUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 break-all">
-                    <ExternalLink className="h-4 w-4" />
-                    View Uploaded Report
-                  </a>
-                  <button
-                    type="button"
-                    onClick={handleReportDelete}
-                    className="p-1 text-red-600 hover:text-red-700 rounded-full hover:bg-red-50"
-                    title="Delete Report"
+                </div>
+                <div className="mt-4">
+                  <button 
+                    type="submit" 
+                    disabled={saving}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    {saving ? 'Saving...' : 'Save URL'}
                   </button>
                 </div>
-              )}
-              <button type="submit" disabled={uploadingReport} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400">
-                {uploadingReport ? 'Uploading...' : 'Upload Report' }
-              </button>
-              {reportMsg && <span className="text-sm text-green-600">{reportMsg}</span>}
-              {deleteReportMsg && <span className="text-sm text-green-600">{deleteReportMsg}</span>}
-            </form>
-          </section>
+              </form>
+            </section>
+          </div>
 
-          {/* Presentation Upload Section */}
-          <section className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-3">Presentation (PPT/PPTX)</h2>
-            <form onSubmit={handlePresentationUpload} className="space-y-4">
-              <input
-                type="file"
-                accept=".ppt,.pptx"
-                className="w-full border rounded p-3 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                onChange={(e) => setPresentationFile(e.target.files[0])}
-              />
-              {project.presentationUrl && (
-                <div className="mt-2 flex items-center gap-3">
-                  <a href={project.presentationUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 break-all">
-                    <ExternalLink className="h-4 w-4" />
-                    View Uploaded Presentation
-                  </a>
-                  <button
-                    type="button"
-                    onClick={handlePresentationDelete}
-                    className="p-1 text-red-600 hover:text-red-700 rounded-full hover:bg-red-50"
-                    title="Delete Presentation"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+          {/* Project Files - Side by Side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Report Card */}
+            <section className="bg-white rounded-xl shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Project Report (PDF)</h2>
+              <form onSubmit={handleReportUpload} className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">Upload Report</label>
+                    {project.projectReportUrl && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleDownload(project.projectReportUrl, `Group${project.groupNo}_Report`, 'pdf')}
+                          className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleReportDelete}
+                          className="text-red-600 hover:text-red-700 p-1 rounded-full hover:bg-red-50"
+                          title="Delete Report"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      className="flex-1 border rounded-lg p-2 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-blue-600 hover:file:bg-blue-50"
+                      onChange={(e) => setReportFile(e.target.files[0])}
+                    />
+                    <button 
+                      type="submit" 
+                      disabled={uploadingReport || !reportFile}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {uploadingReport ? 'Uploading...' : 'Upload'}
+                    </button>
+                  </div>
+                  {reportMsg && <div className="text-sm text-green-600">{reportMsg}</div>}
+                  {deleteReportMsg && <div className="text-sm text-green-600">{deleteReportMsg}</div>}
                 </div>
-              )}
-              <button type="submit" disabled={uploadingPresentation} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400">
-                {uploadingPresentation ? 'Uploading...' : 'Upload Presentation' }
-              </button>
-              {presentationMsg && <span className="text-sm text-green-600">{presentationMsg}</span>}
-              {deletePresentationMsg && <span className="text-sm text-green-600">{deletePresentationMsg}</span>}
-            </form>
+              </form>
+            </section>
+
+            {/* Presentation Card */}
+            <section className="bg-white rounded-xl shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Presentation (PPT/PPTX)</h2>
+              <form onSubmit={handlePresentationUpload} className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">Upload Presentation</label>
+                    {project.presentationUrl && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleDownload(project.presentationUrl, `${project.title}_Presentation`, 'pptx')}
+                          className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handlePresentationDelete}
+                          className="text-red-600 hover:text-red-700 p-1 rounded-full hover:bg-red-50"
+                          title="Delete Presentation"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="file"
+                      accept=".ppt,.pptx"
+                      className="flex-1 border rounded-lg p-2 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-blue-600 hover:file:bg-blue-50"
+                      onChange={(e) => setPresentationFile(e.target.files[0])}
+                    />
+                    <button 
+                      type="submit" 
+                      disabled={uploadingPresentation || !presentationFile}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {uploadingPresentation ? 'Uploading...' : 'Upload'}
+                    </button>
+                  </div>
+                  {presentationMsg && <div className="text-sm text-green-600">{presentationMsg}</div>}
+                  {deletePresentationMsg && <div className="text-sm text-green-600">{deletePresentationMsg}</div>}
+                </div>
+              </form>
+            </section>
+          </div>
+
+          {/* Weekly Reports - Centered */}
+          <section className="bg-white rounded-xl shadow p-6">
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-800">Weekly Reports</h2>
+              <p className="text-gray-500 mt-1">Track your project progress with weekly updates</p>
+            </div>
+            <div className="max-w-4xl mx-auto">
+              <WeeklyReportsCarousel
+                projectId={projectId}
+                project={project}
+                weeklyReports={project.weeklyReportUrls ? (typeof project.weeklyReportUrls === 'string' ? JSON.parse(project.weeklyReportUrls) : project.weeklyReportUrls) || [] : []}
+                token={token}
+                reloadProject={load}
+              />
+            </div>
           </section>
         </main>
       </div>

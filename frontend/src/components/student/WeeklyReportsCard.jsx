@@ -73,7 +73,6 @@ export default function WeeklyReportsCard({ projectId, weeklyReports = [], token
   return (
     <Card className="mb-6">
       <CardHeader>
-        <CardTitle>Weekly Reports</CardTitle>
         <button type="button" onClick={handleAddWeek} className="ml-auto text-blue-600 hover:text-blue-800 flex items-center gap-1">
           <Plus size={18} /> Add Week
         </button>

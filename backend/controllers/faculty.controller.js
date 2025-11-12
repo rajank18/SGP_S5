@@ -299,90 +299,186 @@ export const uploadGroups = async (req, res) => {
         .on('error', reject);
     });
 
-    for (const raw of rows) {
+    // First pass: Collect all student emails and validate data
+    const studentEmails = new Set();
+    const rowsToProcess = [];
+    const invalidRows = [];
+
+    for (const [index, raw] of rows.entries()) {
       try {
-        // Normalize headers expected: groupNo, groupName, projectTitle, projectDescription, fileUrl, internalGuideEmail, externalGuideName, courseCode, studentEmail
+        // Normalize and extract data
         const groupNo = (raw.groupNo ?? raw.GroupNo ?? '').toString().trim();
-        const groupName = (raw.groupName ?? raw.GroupName ?? '').toString().trim() || null;
-        const projectTitle = (raw.projectTitle ?? raw.ProjectTitle ?? '').toString().trim() || null;
-        const projectDescription = (raw.projectDescription ?? raw.ProjectDescription ?? '').toString().trim() || null;
-        const fileUrl = (raw.fileUrl ?? raw.FileUrl ?? '').toString().trim() || null;
-        const internalGuideEmail = (raw.internalGuideEmail ?? raw.InternalGuideEmail ?? '').toString().toLowerCase().trim();
-        const externalGuideName = (raw.externalGuideName ?? raw.ExternalGuideName ?? '').toString().trim() || null;
         const courseCode = (raw.courseCode ?? raw.CourseCode ?? '').toString().trim();
         const studentEmail = (raw.studentEmail ?? raw.StudentEmail ?? '').toString().toLowerCase().trim();
-
+        const internalGuideEmail = (raw.internalGuideEmail ?? raw.InternalGuideEmail ?? '').toString().toLowerCase().trim();
+        
         // Basic validation
         if (!groupNo || !courseCode || !studentEmail) {
-          skippedRows++;
-          skippedByReason.missingFields++;
+          invalidRows.push({
+            row: index + 2, // +2 because header is row 1 and arrays are 0-based
+            reason: 'Missing required fields (groupNo, courseCode, or studentEmail)'
+          });
           continue;
         }
 
-        // Filter: only rows where internalGuideEmail matches logged-in faculty email
+        // Check internal guide email
         const facultyEmailNorm = (facultyUser.email || '').toLowerCase().trim();
         if (!internalGuideEmail || internalGuideEmail !== facultyEmailNorm) {
-          skippedRows++;
-          skippedByReason.internalGuideMismatch++;
+          invalidRows.push({
+            row: index + 2,
+            reason: 'Internal guide email does not match logged-in faculty',
+            data: { internalGuideEmail, facultyEmail: facultyEmailNorm }
+          });
           continue;
         }
 
+        // Add to processing queue
+        rowsToProcess.push({
+          groupNo,
+          groupName: (raw.groupName ?? raw.GroupName ?? '').toString().trim() || null,
+          projectTitle: (raw.projectTitle ?? raw.ProjectTitle ?? '').toString().trim() || null,
+          projectDescription: (raw.projectDescription ?? raw.ProjectDescription ?? '').toString().trim() || null,
+          fileUrl: (raw.fileUrl ?? raw.FileUrl ?? '').toString().trim() || null,
+          internalGuideEmail,
+          externalGuideName: (raw.externalGuideName ?? raw.ExternalGuideName ?? '').toString().trim() || null,
+          courseCode,
+          studentEmail
+        });
+
+        studentEmails.add(studentEmail);
+      } catch (rowErr) {
+        invalidRows.push({
+          row: index + 2,
+          reason: 'Error processing row',
+          error: rowErr.message
+        });
+      }
+    }
+
+    // If there are any invalid rows, return them immediately
+    if (invalidRows.length > 0) {
+      return res.status(400).json({
+        message: 'Validation errors in CSV',
+        invalidRows,
+        totalRows: rows.length,
+        validRows: rowsToProcess.length
+      });
+    }
+
+    // Check if all student emails exist in the database
+    const existingStudents = await User.findAll({
+      where: {
+        email: Array.from(studentEmails),
+        role: 'student'
+      },
+      attributes: ['id', 'email']
+    });
+
+    const existingEmails = new Set(existingStudents.map(s => s.email.toLowerCase()));
+    const missingEmails = Array.from(studentEmails).filter(email => !existingEmails.has(email));
+
+    // If any student emails are missing, return them without making any changes
+    if (missingEmails.length > 0) {
+      return res.status(400).json({
+        message: 'Some student emails were not found in the system',
+        missingEmails,
+        totalStudents: studentEmails.size,
+        foundStudents: existingStudents.length
+      });
+    }
+
+    // Create a map of email to student ID for quick lookup
+    const studentMap = new Map(existingStudents.map(s => [s.email.toLowerCase(), s.id]));
+
+    // Second pass: Process valid rows and create projects/participants
+    const processedGroups = new Map();
+    const t = await sequelize.transaction();
+
+    try {
+      for (const row of rowsToProcess) {
         // Course lookup by courseCode
-        const course = await Course.findOne({ where: { courseCode } });
+        const course = await Course.findOne({ 
+          where: { courseCode: row.courseCode },
+          transaction: t
+        });
+
         if (!course) {
           skippedRows++;
           skippedByReason.courseNotFound++;
           continue;
         }
 
-        // Student lookup by email
-        const student = await User.findOne({ where: { email: studentEmail, role: 'student' } });
-        if (!student) {
-          skippedRows++;
-          skippedByReason.studentNotFound++;
-          continue;
+        const groupKey = `${row.groupNo}-${course.id}-${facultyUser.id}`;
+        let project = processedGroups.get(groupKey);
+
+        // Create project if it doesn't exist
+        if (!project) {
+          [project] = await Project.findOrCreate({
+            where: {
+              groupNo: Number(row.groupNo),
+              courseId: course.id,
+              internalGuideId: facultyUser.id,
+            },
+            defaults: {
+              groupName: row.groupName,
+              title: row.projectTitle || `Project ${row.groupNo}`,
+              description: row.projectDescription,
+              fileUrl: row.fileUrl,
+              externalGuideName: row.externalGuideName,
+              courseId: course.id,
+              internalGuideId: facultyUser.id,
+              groupNo: Number(row.groupNo),
+            },
+            transaction: t
+          });
+
+          if (project.wasCreated) {
+            createdProjects++;
+          }
+          processedGroups.set(groupKey, project);
         }
 
-        // Find or create project by (groupNo, courseId, internalGuideId)
-        const [project, wasCreated] = await Project.findOrCreate({
-          where: {
-            groupNo: Number(groupNo),
-            courseId: course.id,
-            internalGuideId: facultyUser.id,
-          },
-          defaults: {
-            groupName: groupName || null,
-            title: projectTitle || null,
-            description: projectDescription || null,
-            fileUrl: fileUrl || null,
-            externalGuideName: externalGuideName || null,
-            courseId: course.id,
-            internalGuideId: facultyUser.id,
-            groupNo: Number(groupNo),
-          },
-        });
-
-        if (wasCreated) {
-          createdProjects++;
-        }
-
-        // Ensure participant exists
+        // Add student to project
+        const studentId = studentMap.get(row.studentEmail.toLowerCase());
         const existingParticipant = await ProjectParticipant.findOne({
-          where: { projectId: project.id, studentId: student.id },
+          where: { 
+            projectId: project.id, 
+            studentId 
+          },
+          transaction: t
         });
+
         if (!existingParticipant) {
-          await ProjectParticipant.create({ projectId: project.id, studentId: student.id });
+          await ProjectParticipant.create({
+            projectId: project.id,
+            studentId
+          }, { transaction: t });
           addedParticipants++;
         }
-      } catch (rowErr) {
-        // Skip problematic row but continue processing
-        skippedRows++;
-        skippedByReason.rowError++;
       }
+
+      await t.commit();
+      
+      res.json({
+        message: 'Groups uploaded successfully',
+        createdProjects,
+        addedParticipants,
+        skippedRows,
+        skippedByReason,
+        totalProcessed: rowsToProcess.length
+      });
+
+    } catch (error) {
+      await t.rollback();
+      console.error('Error in transaction:', error);
+      throw error; // Will be caught by the outer try-catch
     }
 
-    res.json({ createdProjects, addedParticipants, skippedRows, skippedByReason });
   } catch (err) {
-    res.status(500).json({ message: 'Failed to process CSV', error: err.message });
+    console.error('Error processing upload:', err);
+    res.status(500).json({ 
+      message: 'Failed to process CSV', 
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+    });
   }
 };

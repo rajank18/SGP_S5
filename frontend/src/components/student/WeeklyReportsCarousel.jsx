@@ -121,8 +121,7 @@ export default function WeeklyReportsCarousel({ projectId,project, weeklyReports
   return (
     <Card className="mb-6">
       <CardHeader className="flex items-center gap-4">
-        <CardTitle>Weekly Reports</CardTitle>
-        <div className="flex gap-2 ml-auto">
+        <div className="flex gap-2">
           <button type="button" disabled={currentIdx === 0} onClick={() => setCurrentIdx(i => Math.max(0, i - 1))} className="p-2 rounded-full bg-gray-200 hover:bg-gray-300">
             <ChevronLeft size={18} />
           </button>

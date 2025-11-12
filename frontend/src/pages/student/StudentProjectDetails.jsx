@@ -197,6 +197,57 @@ const StudentProjectDetails = () => {
   if (error) return <div className="p-8 text-red-500">Error: {error}</div>;
   if (!project) return null;
 
+  // ADD THESE TWO NEW FUNCTIONS
+  const handleSaveDescription = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setSaveMsg('');
+    try {
+      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ description }), // only update description
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to save description');
+      setSaveMsg('Description saved!');
+      setTimeout(() => setSaveMsg(''), 2000);
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveURL = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setSaveMsg('');
+    try {
+      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fileUrl }), // only update URL
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to save URL');
+      setSaveMsg('URL saved!');
+      setTimeout(() => setSaveMsg(''), 2000);
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const course = project.course || {};
 
   return (
@@ -217,7 +268,7 @@ const StudentProjectDetails = () => {
               <Award className="h-4 w-4" />
               View Evaluations
             </button>
-            <button 
+            <button
               className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               onClick={() => navigate('/student/dashboard')}
             >
@@ -237,7 +288,7 @@ const StudentProjectDetails = () => {
                   const name = stu.name || 'Unnamed';
                   const email = stu.email || '—';
                   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
-                  
+
                   return (
                     <div key={i} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3 border border-gray-100">
                       <div className="flex items-center justify-center h-10 w-10 rounded-full bg-blue-100 text-blue-700 font-medium">
@@ -261,19 +312,21 @@ const StudentProjectDetails = () => {
             {/* Description Card */}
             <section className="bg-white rounded-xl shadow p-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">Project Description</h2>
-              <form onSubmit={handleSave} className="h-full flex flex-col">
-                <div className="flex-grow">
+
+              <form onSubmit={handleSaveDescription} className="flex flex-col space-y-4">
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <textarea
-                    className="w-full border rounded-lg p-3 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 h-40"
+                    className="w-full bg-transparent text-gray-800 text-sm resize-none focus:outline-none focus:ring-0 h-40"
                     placeholder="Enter your project description..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                   />
                 </div>
-                <div className="mt-4 flex items-center justify-between">
-                  <button 
-                    type="submit" 
-                    disabled={saving} 
+
+                <div className="flex items-center justify-between">
+                  <button
+                    type="submit"
+                    disabled={saving}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                   >
                     {saving ? 'Saving...' : 'Save Description'}
@@ -281,48 +334,55 @@ const StudentProjectDetails = () => {
                   {saveMsg && <span className="text-sm text-green-600">{saveMsg}</span>}
                 </div>
               </form>
+
             </section>
 
             {/* File URL Card */}
             <section className="bg-white rounded-xl shadow p-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">Project Repository</h2>
-              <form onSubmit={handleSave} className="h-full flex flex-col">
-                <div className="flex-grow">
-                  <div className="space-y-2">
-                    <input
-                      type="url"
-                      className="w-full border rounded-lg p-2 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="https://github.com/username/project"
-                      value={fileUrl}
-                      onChange={(e) => setFileUrl(e.target.value)}
-                    />
-                    {project.fileUrl && (
-                      <div className="mt-2">
-                        <a 
-                          href={project.fileUrl} 
-                          target="_blank" 
-                          rel="noreferrer" 
-                          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 break-all text-sm"
-                        >
-                          <ExternalLink className="h-4 w-4 flex-shrink-0" />
-                          <span className="truncate">{project.fileUrl}</span>
-                        </a>
-                      </div>
-                    )}
-                  </div>
+
+              <form onSubmit={handleSaveURL} className="flex flex-col space-y-4">
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-2">
+                  <input
+                    type="url"
+                    className="w-full bg-transparent text-sm text-gray-800 border-none focus:outline-none focus:ring-0"
+                    placeholder="https://github.com/username/project"
+                    value={fileUrl}
+                    onChange={(e) => setFileUrl(e.target.value)}
+                  />
+
+                  {project.fileUrl ? (
+                    <div className="pt-2 border-t border-gray-200">
+                      <a
+                        href={project.fileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 break-all text-sm"
+                      >
+                        <ExternalLink className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{project.fileUrl}</span>
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 italic text-sm">No repository URL provided yet.</p>
+                  )}
                 </div>
-                <div className="mt-4">
-                  <button 
-                    type="submit" 
+
+                <div className="flex items-center justify-between">
+                  <button
+                    type="submit"
                     disabled={saving}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                   >
                     {saving ? 'Saving...' : 'Save URL'}
                   </button>
+                  {saveMsg && <span className="text-sm text-green-600">{saveMsg}</span>}
                 </div>
               </form>
+
             </section>
           </div>
+
 
           {/* Project Files - Side by Side */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -361,8 +421,8 @@ const StudentProjectDetails = () => {
                       className="flex-1 border rounded-lg p-2 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-blue-600 hover:file:bg-blue-50"
                       onChange={(e) => setReportFile(e.target.files[0])}
                     />
-                    <button 
-                      type="submit" 
+                    <button
+                      type="submit"
                       disabled={uploadingReport || !reportFile}
                       className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                     >
@@ -410,8 +470,8 @@ const StudentProjectDetails = () => {
                       className="flex-1 border rounded-lg p-2 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-blue-600 hover:file:bg-blue-50"
                       onChange={(e) => setPresentationFile(e.target.files[0])}
                     />
-                    <button 
-                      type="submit" 
+                    <button
+                      type="submit"
                       disabled={uploadingPresentation || !presentationFile}
                       className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                     >

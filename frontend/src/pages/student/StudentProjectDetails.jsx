@@ -11,8 +11,10 @@ const StudentProjectDetails = () => {
   const [error, setError] = useState('');
   const [description, setDescription] = useState('');
   const [fileUrl, setFileUrl] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState('');
+  const [savingDescription, setSavingDescription] = useState(false);
+  const [savingURL, setSavingURL] = useState(false);
+  const [saveDescriptionMsg, setSaveDescriptionMsg] = useState('');
+  const [saveURLMsg, setSaveURLMsg] = useState('');
   const [reportFile, setReportFile] = useState(null);
   const [presentationFile, setPresentationFile] = useState(null);
   const [uploadingReport, setUploadingReport] = useState(false);
@@ -46,10 +48,10 @@ const StudentProjectDetails = () => {
 
   useEffect(() => { load(); }, [projectId]);
 
-  const handleSave = async (e) => {
+  const handleSaveDescription = async (e) => {
     e.preventDefault();
-    setSaving(true);
-    setSaveMsg('');
+    setSavingDescription(true);
+    setSaveDescriptionMsg('');
     try {
       const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}`, {
         method: 'PUT',
@@ -57,17 +59,42 @@ const StudentProjectDetails = () => {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ description, fileUrl }),
+        body: JSON.stringify({ description }), // only update description
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to save');
-      setSaveMsg('Saved!');
-      setTimeout(() => setSaveMsg(''), 2000);
+      if (!res.ok) throw new Error(data.message || 'Failed to save description');
+      setSaveDescriptionMsg('Description saved!');
+      setTimeout(() => setSaveDescriptionMsg(''), 2000);
       await load();
     } catch (err) {
       setError(err.message);
     } finally {
-      setSaving(false);
+      setSavingDescription(false);
+    }
+  };
+
+  const handleSaveURL = async (e) => {
+    e.preventDefault();
+    setSavingURL(true);
+    setSaveURLMsg('');
+    try {
+      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fileUrl }), // only update URL
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to save URL');
+      setSaveURLMsg('URL saved!');
+      setTimeout(() => setSaveURLMsg(''), 2000);
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingURL(false);
     }
   };
 
@@ -197,57 +224,6 @@ const StudentProjectDetails = () => {
   if (error) return <div className="p-8 text-red-500">Error: {error}</div>;
   if (!project) return null;
 
-  // ADD THESE TWO NEW FUNCTIONS
-  const handleSaveDescription = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setSaveMsg('');
-    try {
-      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ description }), // only update description
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to save description');
-      setSaveMsg('Description saved!');
-      setTimeout(() => setSaveMsg(''), 2000);
-      await load();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSaveURL = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setSaveMsg('');
-    try {
-      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ fileUrl }), // only update URL
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to save URL');
-      setSaveMsg('URL saved!');
-      setTimeout(() => setSaveMsg(''), 2000);
-      await load();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const course = project.course || {};
 
   return (
@@ -326,12 +302,12 @@ const StudentProjectDetails = () => {
                 <div className="flex items-center justify-between">
                   <button
                     type="submit"
-                    disabled={saving}
+                    disabled={savingDescription}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                   >
-                    {saving ? 'Saving...' : 'Save Description'}
+                    {savingDescription ? 'Saving...' : 'Save Description'}
                   </button>
-                  {saveMsg && <span className="text-sm text-green-600">{saveMsg}</span>}
+                  {saveDescriptionMsg && <span className="text-sm text-green-600">{saveDescriptionMsg}</span>}
                 </div>
               </form>
 
@@ -371,12 +347,12 @@ const StudentProjectDetails = () => {
                 <div className="flex items-center justify-between">
                   <button
                     type="submit"
-                    disabled={saving}
+                    disabled={savingURL}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                   >
-                    {saving ? 'Saving...' : 'Save URL'}
+                    {savingURL ? 'Saving...' : 'Save URL'}
                   </button>
-                  {saveMsg && <span className="text-sm text-green-600">{saveMsg}</span>}
+                  {saveURLMsg && <span className="text-sm text-green-600">{saveURLMsg}</span>}
                 </div>
               </form>
 

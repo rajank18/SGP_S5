@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { getAssignedCourses, uploadProjects, getCourseProjects, uploadGroups } from '../controllers/faculty.controller.js';
+import { getAssignedCourses, uploadProjects, getCourseProjects, uploadGroups, exportCourseData } from '../controllers/faculty.controller.js';
 import { authenticateJWT } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -30,5 +30,8 @@ router.get('/courses/:courseId/projects', authenticateJWT, getCourseProjects);
 
 // New route: upload groups via CSV
 router.post('/upload-groups', authenticateJWT, upload.single('file'), uploadGroups);
+
+// Export course data
+router.get('/courses/:courseId/export', authenticateJWT, exportCourseData);
 
 export default router;

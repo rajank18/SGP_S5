@@ -14,3 +14,5 @@ export const authenticateJWT = (req, res, next) => {
     res.status(401).json({ message: 'No token provided' });
   }
 };
+
+export default authenticateJWT;

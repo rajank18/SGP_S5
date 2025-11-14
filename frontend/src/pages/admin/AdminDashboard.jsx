@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Users, ClipboardList, UserPlus } from 'lucide-react';
+import { BookOpen, Users, ClipboardList, UserPlus, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumNavigation'; // Import the new component
 import { motion } from 'framer-motion'
@@ -117,6 +117,14 @@ const AdminDashboard = () => {
             icon={UserPlus} 
             iconBgColor="bg-pink-500"
             onClick={() => navigate('/admin/students')} 
+            delay={0.02}
+          />
+          <StatCard 
+            title="Export" 
+            value="Data" 
+            icon={Download} 
+            iconBgColor="bg-orange-500"
+            onClick={() => navigate('/admin/export')} 
             delay={0.02}
           />
         </div>

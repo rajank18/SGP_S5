@@ -11,6 +11,7 @@ import AdminRubrics from '../pages/admin/Rubrics'
 import AdminRubricDetails from '../pages/admin/RubricDetails'
 import AdminCustomRubric from '../pages/admin/CustomRubric'
 import SendMailCSV from '../components/SendMailCSV'
+import ExportData from '../pages/admin/ExportData'
 
 const AdminRoutes = () => {
   return (
@@ -26,6 +27,7 @@ const AdminRoutes = () => {
           <Route path="rubrics/custom" element={<AdminCustomRubric />} />
           <Route path="rubrics/:id" element={<AdminRubricDetails />} />
           <Route path="bulk-mail" element={<SendMailCSV />} />
+          <Route path="export" element={<ExportData />} />
         </Route>
       </Route>
     </Routes>

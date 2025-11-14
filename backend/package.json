@@ -19,6 +19,7 @@
     "cors": "^2.8.5",
     "csv-parser": "^3.2.0",
     "dotenv": "^17.2.0",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "googleapis": "^162.0.0",
     "jsonwebtoken": "^9.0.2",

@@ -15,7 +15,8 @@ import {
   getCourseAssignments,
   uploadStudents,
   getAllStudents,
-  sendStudentEmails
+  sendStudentEmails,
+  exportMasterData
 } from '../controllers/admin.controller.js';
 import { authenticateAdmin } from '../middleware/adminAuth.js';
 
@@ -62,5 +63,8 @@ router.get('/students', authenticateAdmin, getAllStudents);
 
 // Send emails to students
 router.post('/send-emails', authenticateAdmin, sendStudentEmails);
+
+// Export master data to Excel
+router.get('/export-master-data', authenticateAdmin, exportMasterData);
 
 export default router;

@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { getAssignedCourses, uploadProjects, getCourseProjects, uploadGroups, exportCourseData } from '../controllers/faculty.controller.js';
+import { getAssignedCourses, uploadProjects, getCourseProjects, uploadGroups, exportCourseData, notifyStudents } from '../controllers/faculty.controller.js';
 import { authenticateJWT } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -33,5 +33,8 @@ router.post('/upload-groups', authenticateJWT, upload.single('file'), uploadGrou
 
 // Export course data
 router.get('/courses/:courseId/export', authenticateJWT, exportCourseData);
+
+// Notify students about submission deadlines (report/presentation)
+router.post('/courses/:courseId/projects/:projectId/notify-students', authenticateJWT, notifyStudents);
 
 export default router;

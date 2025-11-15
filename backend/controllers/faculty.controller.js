@@ -6,6 +6,9 @@ import Course from '../models/Course.js';
 import Project from '../models/Project.js'; // You will need to create this model file
 import User from '../models/User.js';
 import ProjectParticipant from '../models/ProjectParticipant.js'; // You will need to create this model file
+import Evaluation from '../models/Evaluation.js';
+import Rubric from '../models/Rubric.js';
+import nodemailer from 'nodemailer';
 
 // --- EXISTING FUNCTION ---
 export const getAssignedCourses = async (req, res) => {
@@ -479,6 +482,370 @@ export const uploadGroups = async (req, res) => {
     res.status(500).json({ 
       message: 'Failed to process CSV', 
       error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+    });
+  }
+};
+
+// Export course data to Excel
+export const exportCourseData = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const facultyId = req.user.id;
+
+    console.log(`[EXPORT] Attempting to export courseId: ${courseId} for facultyId: ${facultyId}`);
+
+    // Verify faculty is assigned to this course
+    const assignment = await CourseFaculty.findOne({
+      where: { courseId, facultyId }
+    });
+
+    if (!assignment) {
+      console.log(`[EXPORT] Faculty ${facultyId} not assigned to course ${courseId}`);
+      return res.status(403).json({ message: "You are not authorized to access this course." });
+    }
+
+    console.log(`[EXPORT] Authorization verified, fetching projects...`);
+
+    // Fetch all projects for this course with evaluations
+    const projects = await Project.findAll({
+      where: { courseId, internalGuideId: facultyId },
+      include: [
+        {
+          model: ProjectParticipant,
+          as: 'participants',
+          include: [
+            {
+              model: User,
+              as: 'student',
+              attributes: ['id', 'name', 'email']
+            }
+          ]
+        },
+        {
+          model: Evaluation,
+          as: 'evaluations',
+          include: [
+            {
+              model: Rubric,
+              as: 'rubric',
+              attributes: ['id', 'title']
+            }
+          ]
+        },
+        {
+          model: Course,
+          as: 'course',
+          attributes: ['id', 'name']
+        }
+      ],
+      order: [['groupNo', 'ASC']]
+    });
+
+    console.log(`[EXPORT] Found ${projects.length} projects for export`);
+
+    // Format data for export
+    const exportData = [];
+    
+    projects.forEach(project => {
+      // Parse weekly report URLs
+      let weeklySubmissions = [];
+      if (project.weeklyReportUrls) {
+        try {
+          weeklySubmissions = typeof project.weeklyReportUrls === 'string' 
+            ? JSON.parse(project.weeklyReportUrls)
+            : project.weeklyReportUrls;
+        } catch (e) {
+          console.warn(`[EXPORT] Error parsing weeklyReportUrls for project ${project.id}:`, e.message);
+          weeklySubmissions = [];
+        }
+      }
+
+      // Get max weeks
+      const maxWeek = weeklySubmissions.length > 0 
+        ? Math.max(...weeklySubmissions.map(w => w.week || 0))
+        : 0;
+
+      // Get student names
+      const studentNames = project.participants
+        .map(p => p.student?.name || 'Unknown')
+        .join(', ');
+
+      // Calculate evaluation scores
+      let evaluationScores = [];
+      let totalScore = 0;
+      let rubricCount = 0;
+
+      if (project.evaluations && project.evaluations.length > 0) {
+        project.evaluations.forEach((evaluation, idx) => {
+          let rubricScore = 0;
+          if (evaluation.criteriaMarks && Array.isArray(evaluation.criteriaMarks)) {
+            rubricScore = evaluation.criteriaMarks.reduce((sum, cm) => sum + (cm.marks || 0), 0);
+          }
+          evaluationScores.push({
+            rubric: evaluation.rubric?.title || `Rubric ${idx + 1}`,
+            score: rubricScore
+          });
+          totalScore += rubricScore;
+          rubricCount++;
+        });
+      }
+
+      // Build row data
+      const rowData = {
+        groupName: project.groupName || `Group ${project.groupNo}`,
+        projectTitle: project.title,
+        studentNames: studentNames,
+        finalReportLink: project.projectReportUrl || '',
+        pptLink: project.presentationUrl || '',
+        githubLink: project.fileUrl || '',
+      };
+
+      // Add evaluation scores
+      evaluationScores.forEach((score, idx) => {
+        rowData[`evaluationScore_${idx + 1}_${score.rubric}`] = score.score;
+      });
+      rowData['totalEvaluationScore'] = totalScore;
+
+      // Add weekly submissions
+      for (let week = 1; week <= maxWeek; week++) {
+        const submitted = weeklySubmissions.some(w => w.week === week);
+        rowData[`week_${week}_status`] = submitted ? 'Submitted' : 'Not Submitted';
+      }
+
+      rowData['maxWeeks'] = maxWeek;
+      rowData['weeklySubmissions'] = weeklySubmissions;
+      
+      exportData.push(rowData);
+    });
+
+    console.log(`[EXPORT] Export data prepared successfully, returning response`);
+
+    // Return data as JSON to be used by frontend for Excel generation
+    res.json({
+      success: true,
+      data: exportData,
+      courseName: projects.length > 0 ? projects[0].course?.name : 'Unknown Course',
+      exportDate: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('[EXPORT] Error exporting course data:', error);
+    res.status(500).json({ message: 'Failed to export course data', error: error.message });
+  }
+};
+
+// Notify students about submission deadlines (report/presentation)
+export const notifyStudents = async (req, res) => {
+  try {
+    const { courseId, projectId } = req.params;
+    const { submissionType, deadlineDate } = req.body;
+    const facultyId = req.user.id;
+
+    // Validate input
+    if (!submissionType || !deadlineDate) {
+      return res.status(400).json({ 
+        message: 'Missing required fields: submissionType and deadlineDate' 
+      });
+    }
+
+    // Validate submission type
+    if (!['report', 'ppt', 'both'].includes(submissionType)) {
+      return res.status(400).json({ 
+        message: 'Invalid submissionType. Must be "report", "ppt", or "both"' 
+      });
+    }
+
+    // Check if email credentials are configured
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      return res.status(500).json({ 
+        message: 'Email credentials not configured. Please set EMAIL_USER and EMAIL_PASS in .env file' 
+      });
+    }
+
+    // Verify faculty is assigned to this course
+    const assignment = await CourseFaculty.findOne({
+      where: { courseId, facultyId }
+    });
+
+    if (!assignment) {
+      return res.status(403).json({ 
+        message: "You are not authorized to notify students for this course." 
+      });
+    }
+
+    // Fetch project with participants
+    const project = await Project.findOne({
+      where: {
+        id: projectId,
+        courseId,
+        internalGuideId: facultyId
+      },
+      include: [
+        {
+          model: ProjectParticipant,
+          as: 'participants',
+          include: [
+            {
+              model: User,
+              as: 'student',
+              attributes: ['id', 'name', 'email']
+            }
+          ]
+        },
+        {
+          model: Course,
+          as: 'course',
+          attributes: ['id', 'name', 'courseCode']
+        }
+      ]
+    });
+
+    if (!project) {
+      return res.status(404).json({ 
+        message: "Project not found or you are not the internal guide." 
+      });
+    }
+
+    if (!project.participants || project.participants.length === 0) {
+      return res.status(400).json({ 
+        message: "No students found for this project." 
+      });
+    }
+
+    // Create transporter for sending emails
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    // Get faculty info
+    const faculty = await User.findByPk(facultyId, {
+      attributes: ['name', 'email']
+    });
+
+    // Prepare notification messages based on submission type
+    let submissionTitle = '';
+    let submissionDescription = '';
+
+    if (submissionType === 'report') {
+      submissionTitle = 'Project Report';
+      submissionDescription = 'final project report';
+    } else if (submissionType === 'ppt') {
+      submissionTitle = 'PPT/Presentation';
+      submissionDescription = 'presentation (PPT)';
+    } else {
+      submissionTitle = 'Project Report & Presentation';
+      submissionDescription = 'project report and presentation';
+    }
+
+    const deadlineFormatted = new Date(deadlineDate).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    // Send emails to all students
+    const results = {
+      success: [],
+      failed: []
+    };
+
+    for (const participant of project.participants) {
+      const studentEmail = participant.student?.email;
+      const studentName = participant.student?.name;
+
+      if (!studentEmail) {
+        results.failed.push({
+          name: studentName || 'Unknown',
+          email: 'N/A',
+          error: 'No email found'
+        });
+        continue;
+      }
+
+      try {
+        const mailOptions = {
+          from: `"SGP System" <${process.env.EMAIL_USER}>`,
+          to: studentEmail,
+          subject: `${submissionTitle} Submission Deadline - ${project.course?.courseCode}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px;">
+              <h2 style="color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px;">
+                ${submissionTitle} Submission Reminder
+              </h2>
+              
+              <p>Hello <strong>${studentName}</strong>,</p>
+              
+              <p>This is a friendly reminder about the upcoming submission deadline for your project.</p>
+              
+              <div style="background-color: #ecf0f1; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>Course:</strong> ${project.course?.courseCode} - ${project.course?.name}</p>
+                <p style="margin: 5px 0;"><strong>Project:</strong> ${project.title}</p>
+                <p style="margin: 5px 0;"><strong>Group:</strong> ${project.groupName || `Group ${project.groupNo}`}</p>
+                <p style="margin: 5px 0;"><strong>Submission Type:</strong> ${submissionTitle}</p>
+                <p style="margin: 5px 0; color: #e74c3c;"><strong>Deadline:</strong> ${deadlineFormatted}</p>
+              </div>
+              
+              <p>Please ensure that your ${submissionDescription} is submitted by the deadline. Late submissions may not be accepted.</p>
+              
+              <p>If you have any questions or need clarification, please contact your internal guide:</p>
+              <div style="background-color: #f8f9fa; padding: 10px; border-left: 3px solid #3498db;">
+                <p style="margin: 5px 0;"><strong>${faculty?.name}</strong></p>
+                <p style="margin: 5px 0;"><a href="mailto:${faculty?.email}">${faculty?.email}</a></p>
+              </div>
+              
+              <p style="margin-top: 25px; color: #7f8c8d; font-size: 12px;">
+                This is an automated message from the SGP (Student Group Project) Management System. 
+                Please do not reply to this email.
+              </p>
+            </div>
+          `
+        };
+
+        await transporter.sendMail(mailOptions);
+        
+        results.success.push({
+          name: studentName,
+          email: studentEmail,
+          status: 'Email sent successfully'
+        });
+
+        console.log(`✓ Notification sent to ${studentEmail}`);
+
+      } catch (error) {
+        results.failed.push({
+          name: studentName,
+          email: studentEmail,
+          error: error.message
+        });
+        console.error(`✗ Failed to send email to ${studentEmail}:`, error.message);
+      }
+    }
+
+    // Return results
+    res.json({
+      message: 'Notification process completed',
+      project: {
+        id: project.id,
+        title: project.title,
+        groupName: project.groupName || `Group ${project.groupNo}`
+      },
+      submissionType,
+      deadlineDate: deadlineFormatted,
+      totalStudents: project.participants.length,
+      emailsSent: results.success.length,
+      emailsFailed: results.failed.length,
+      results
+    });
+
+  } catch (error) {
+    console.error('[NOTIFY] Error notifying students:', error);
+    res.status(500).json({ 
+      message: 'Failed to send notifications', 
+      error: error.message 
     });
   }
 };

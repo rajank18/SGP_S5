@@ -1,7 +1,7 @@
 import WeeklyReportsCarousel from '@/components/student/WeeklyReportsCarousel';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ExternalLink, Trash2, Award } from 'lucide-react';
+import { ExternalLink, Trash2, Award, X } from 'lucide-react';
 
 const StudentProjectDetails = () => {
   const { projectId } = useParams();
@@ -11,8 +11,10 @@ const StudentProjectDetails = () => {
   const [error, setError] = useState('');
   const [description, setDescription] = useState('');
   const [fileUrl, setFileUrl] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState('');
+  const [savingDescription, setSavingDescription] = useState(false);
+  const [savingURL, setSavingURL] = useState(false);
+  const [saveDescriptionMsg, setSaveDescriptionMsg] = useState('');
+  const [saveURLMsg, setSaveURLMsg] = useState('');
   const [reportFile, setReportFile] = useState(null);
   const [presentationFile, setPresentationFile] = useState(null);
   const [uploadingReport, setUploadingReport] = useState(false);
@@ -21,6 +23,10 @@ const StudentProjectDetails = () => {
   const [presentationMsg, setPresentationMsg] = useState('');
   const [deleteReportMsg, setDeleteReportMsg] = useState('');
   const [deletePresentationMsg, setDeletePresentationMsg] = useState('');
+  const [deletingReport, setDeletingReport] = useState(false);
+  const [deletingPresentation, setDeletingPresentation] = useState(false);
+  const [showDeleteReportModal, setShowDeleteReportModal] = useState(false);
+  const [showDeletePptModal, setShowDeletePptModal] = useState(false);
 
   const token = localStorage.getItem('prograde_token');
 
@@ -46,10 +52,10 @@ const StudentProjectDetails = () => {
 
   useEffect(() => { load(); }, [projectId]);
 
-  const handleSave = async (e) => {
+  const handleSaveDescription = async (e) => {
     e.preventDefault();
-    setSaving(true);
-    setSaveMsg('');
+    setSavingDescription(true);
+    setSaveDescriptionMsg('');
     try {
       const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}`, {
         method: 'PUT',
@@ -57,17 +63,42 @@ const StudentProjectDetails = () => {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ description, fileUrl }),
+        body: JSON.stringify({ description }), // only update description
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to save');
-      setSaveMsg('Saved!');
-      setTimeout(() => setSaveMsg(''), 2000);
+      if (!res.ok) throw new Error(data.message || 'Failed to save description');
+      setSaveDescriptionMsg('Description saved!');
+      setTimeout(() => setSaveDescriptionMsg(''), 2000);
       await load();
     } catch (err) {
       setError(err.message);
     } finally {
-      setSaving(false);
+      setSavingDescription(false);
+    }
+  };
+
+  const handleSaveURL = async (e) => {
+    e.preventDefault();
+    setSavingURL(true);
+    setSaveURLMsg('');
+    try {
+      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fileUrl }), // only update URL
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to save URL');
+      setSaveURLMsg('URL saved!');
+      setTimeout(() => setSaveURLMsg(''), 2000);
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingURL(false);
     }
   };
 
@@ -129,6 +160,7 @@ const StudentProjectDetails = () => {
 
   const handleReportDelete = async () => {
     setDeleteReportMsg('');
+    setDeletingReport(true);
     try {
       const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}/delete-report`, {
         method: 'DELETE',
@@ -143,11 +175,15 @@ const StudentProjectDetails = () => {
       await load();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setDeletingReport(false);
+      setShowDeleteReportModal(false);
     }
   };
 
   const handlePresentationDelete = async () => {
     setDeletePresentationMsg('');
+    setDeletingPresentation(true);
     try {
       const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}/delete-presentation`, {
         method: 'DELETE',
@@ -162,6 +198,9 @@ const StudentProjectDetails = () => {
       await load();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setDeletingPresentation(false);
+      setShowDeletePptModal(false);
     }
   };
 
@@ -196,57 +235,6 @@ const StudentProjectDetails = () => {
   if (loading) return <div className="p-8">Loading project...</div>;
   if (error) return <div className="p-8 text-red-500">Error: {error}</div>;
   if (!project) return null;
-
-  // ADD THESE TWO NEW FUNCTIONS
-  const handleSaveDescription = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setSaveMsg('');
-    try {
-      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ description }), // only update description
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to save description');
-      setSaveMsg('Description saved!');
-      setTimeout(() => setSaveMsg(''), 2000);
-      await load();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSaveURL = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setSaveMsg('');
-    try {
-      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ fileUrl }), // only update URL
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to save URL');
-      setSaveMsg('URL saved!');
-      setTimeout(() => setSaveMsg(''), 2000);
-      await load();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const course = project.course || {};
 
@@ -326,12 +314,12 @@ const StudentProjectDetails = () => {
                 <div className="flex items-center justify-between">
                   <button
                     type="submit"
-                    disabled={saving}
+                    disabled={savingDescription}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                   >
-                    {saving ? 'Saving...' : 'Save Description'}
+                    {savingDescription ? 'Saving...' : 'Save Description'}
                   </button>
-                  {saveMsg && <span className="text-sm text-green-600">{saveMsg}</span>}
+                  {saveDescriptionMsg && <span className="text-sm text-green-600">{saveDescriptionMsg}</span>}
                 </div>
               </form>
 
@@ -371,12 +359,12 @@ const StudentProjectDetails = () => {
                 <div className="flex items-center justify-between">
                   <button
                     type="submit"
-                    disabled={saving}
+                    disabled={savingURL}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                   >
-                    {saving ? 'Saving...' : 'Save URL'}
+                    {savingURL ? 'Saving...' : 'Save URL'}
                   </button>
-                  {saveMsg && <span className="text-sm text-green-600">{saveMsg}</span>}
+                  {saveURLMsg && <span className="text-sm text-green-600">{saveURLMsg}</span>}
                 </div>
               </form>
 
@@ -390,7 +378,7 @@ const StudentProjectDetails = () => {
             <section className="bg-white rounded-xl shadow p-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">Project Report (PDF)</h2>
               <form onSubmit={handleReportUpload} className="space-y-4">
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium text-gray-700">Upload Report</label>
                     {project.projectReportUrl && (
@@ -398,39 +386,56 @@ const StudentProjectDetails = () => {
                         <button
                           type="button"
                           onClick={() => handleDownload(project.projectReportUrl, `Group${project.groupNo}_Report`, 'pdf')}
-                          className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
+                          className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1 px-3 py-1 rounded hover:bg-blue-50"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
                           View
                         </button>
                         <button
                           type="button"
-                          onClick={handleReportDelete}
-                          className="text-red-600 hover:text-red-700 p-1 rounded-full hover:bg-red-50"
+                          onClick={() => setShowDeleteReportModal(true)}
+                          disabled={deletingReport}
+                          className="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           title="Delete Report"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          {deletingReport ? (
+                            <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
                         </button>
                       </div>
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      className="flex-1 border rounded-lg p-2 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-blue-600 hover:file:bg-blue-50"
-                      onChange={(e) => setReportFile(e.target.files[0])}
-                    />
-                    <button
-                      type="submit"
-                      disabled={uploadingReport || !reportFile}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {uploadingReport ? 'Uploading...' : 'Upload'}
-                    </button>
+                    <label className="flex-1 flex items-center justify-center px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        className="hidden"
+                        onChange={(e) => setReportFile(e.target.files[0])}
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        {reportFile ? reportFile.name : 'Choose PDF file or drag & drop'}
+                      </span>
+                    </label>
                   </div>
-                  {reportMsg && <div className="text-sm text-green-600">{reportMsg}</div>}
-                  {deleteReportMsg && <div className="text-sm text-green-600">{deleteReportMsg}</div>}
+                  <button
+                    type="submit"
+                    disabled={uploadingReport || !reportFile}
+                    className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    {uploadingReport ? (
+                      <>
+                        <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      'Upload Report'
+                    )}
+                  </button>
+                  {reportMsg && <div className="text-sm text-green-600 font-medium">{reportMsg}</div>}
+                  {deleteReportMsg && <div className="text-sm text-green-600 font-medium">{deleteReportMsg}</div>}
                 </div>
               </form>
             </section>
@@ -439,7 +444,7 @@ const StudentProjectDetails = () => {
             <section className="bg-white rounded-xl shadow p-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">Presentation (PPT/PPTX)</h2>
               <form onSubmit={handlePresentationUpload} className="space-y-4">
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium text-gray-700">Upload Presentation</label>
                     {project.presentationUrl && (
@@ -447,39 +452,56 @@ const StudentProjectDetails = () => {
                         <button
                           type="button"
                           onClick={() => handleDownload(project.presentationUrl, `${project.title}_Presentation`, 'pptx')}
-                          className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
+                          className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1 px-3 py-1 rounded hover:bg-blue-50"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
                           View
                         </button>
                         <button
                           type="button"
-                          onClick={handlePresentationDelete}
-                          className="text-red-600 hover:text-red-700 p-1 rounded-full hover:bg-red-50"
+                          onClick={() => setShowDeletePptModal(true)}
+                          disabled={deletingPresentation}
+                          className="text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           title="Delete Presentation"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          {deletingPresentation ? (
+                            <div className="h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
                         </button>
                       </div>
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <input
-                      type="file"
-                      accept=".ppt,.pptx"
-                      className="flex-1 border rounded-lg p-2 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-blue-600 hover:file:bg-blue-50"
-                      onChange={(e) => setPresentationFile(e.target.files[0])}
-                    />
-                    <button
-                      type="submit"
-                      disabled={uploadingPresentation || !presentationFile}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {uploadingPresentation ? 'Uploading...' : 'Upload'}
-                    </button>
+                    <label className="flex-1 flex items-center justify-center px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                      <input
+                        type="file"
+                        accept=".ppt,.pptx"
+                        className="hidden"
+                        onChange={(e) => setPresentationFile(e.target.files[0])}
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        {presentationFile ? presentationFile.name : 'Choose PPTX file or drag & drop'}
+                      </span>
+                    </label>
                   </div>
-                  {presentationMsg && <div className="text-sm text-green-600">{presentationMsg}</div>}
-                  {deletePresentationMsg && <div className="text-sm text-green-600">{deletePresentationMsg}</div>}
+                  <button
+                    type="submit"
+                    disabled={uploadingPresentation || !presentationFile}
+                    className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    {uploadingPresentation ? (
+                      <>
+                        <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      'Upload Presentation'
+                    )}
+                  </button>
+                  {presentationMsg && <div className="text-sm text-green-600 font-medium">{presentationMsg}</div>}
+                  {deletePresentationMsg && <div className="text-sm text-green-600 font-medium">{deletePresentationMsg}</div>}
                 </div>
               </form>
             </section>
@@ -511,6 +533,90 @@ const StudentProjectDetails = () => {
           </section>
         </main>
       </div>
+
+      {/* Delete Report Confirmation Modal */}
+      {showDeleteReportModal && (
+        <div className="fixed inset-0 z-50 backdrop-blur-md bg-black/20 flex items-center justify-center">
+          <div className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Delete Report</h3>
+              <button
+                onClick={() => setShowDeleteReportModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete the project report? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteReportModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReportDelete}
+                disabled={deletingReport}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {deletingReport ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Presentation Confirmation Modal */}
+      {showDeletePptModal && (
+        <div className="fixed inset-0 z-50 backdrop-blur-md bg-black/20 flex items-center justify-center">
+          <div className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Delete Presentation</h3>
+              <button
+                onClick={() => setShowDeletePptModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete the presentation? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeletePptModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePresentationDelete}
+                disabled={deletingPresentation}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {deletingPresentation ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

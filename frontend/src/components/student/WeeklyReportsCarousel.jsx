@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Trash2, X } from 'lucide-react';
 
 const MAX_DEFAULT_WEEKS = 5;
 const MAX_WEEKS = 20;
 
-export default function WeeklyReportsCarousel({ projectId,project, weeklyReports = [], token, reloadProject }) {
-  const [localWeeklyReports, setLocalWeeklyReports] = useState(() => Array.isArray(weeklyReports) ? weeklyReports.slice() : []);
+// export default function WeeklyReportsCarousel({ projectId,project, weeklyReports = [], token, reloadProject }) {
+//   const [localWeeklyReports, setLocalWeeklyReports] = useState(() => Array.isArray(weeklyReports) ? weeklyReports.slice() : []);
+export default function WeeklyReportsCarousel({ projectId, project, weeklyReports = [], token, reloadProject }) {
   const [weeks, setWeeks] = useState(() => {
     const maxWeek = Math.max(MAX_DEFAULT_WEEKS, ... (Array.isArray(weeklyReports) ? weeklyReports.map(r => r.week || 0) : []));
     return Array.from({ length: maxWeek }, (_, i) => i + 1);
@@ -17,6 +18,7 @@ export default function WeeklyReportsCarousel({ projectId,project, weeklyReports
   const [deletingWeek, setDeletingWeek] = useState(null);
   const [uploadMsg, setUploadMsg] = useState('');
   const weekRefs = useRef([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const currentWeek = weeks[currentIdx];
   const report = localWeeklyReports.find(r => r.week === currentWeek);
@@ -131,7 +133,6 @@ export default function WeeklyReportsCarousel({ projectId,project, weeklyReports
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Are you sure you want to delete Week ${currentWeek} report?`)) return;
     setDeletingWeek(currentWeek);
     setUploadMsg('');
     try {
@@ -150,6 +151,7 @@ export default function WeeklyReportsCarousel({ projectId,project, weeklyReports
       setUploadMsg(err.message);
     } finally {
       setDeletingWeek(null);
+      setShowDeleteModal(false);
     }
   };
 
@@ -239,40 +241,131 @@ export default function WeeklyReportsCarousel({ projectId,project, weeklyReports
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col items-center gap-2">
-          <div className="font-semibold mb-2">Week {currentWeek}</div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900">Week {currentWeek}</h3>
+          </div>
           {report ? (
-            <div className="flex flex-col items-center gap-2">
-              <a onClick={() => handleDownload(report.url, `Group${project.title}_Week${report.week}_Report`, 'pdf')}
-                rel="noopener noreferrer" className="text-green-700 cursor-pointer underline mb-2">
+            <div className="w-full flex flex-col items-center gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="flex items-center gap-2 text-green-700">
+                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <span className="font-medium">Report Submitted</span>
+              </div>
+              <a
+                onClick={() => handleDownload(report.url, `Group${project.title}_Week${report.week}_Report`, 'pdf')}
+                rel="noopener noreferrer"
+                className="text-blue-600 cursor-pointer hover:text-blue-700 hover:underline text-sm font-medium"
+              >
                 {report.filename}
               </a>
               <button
                 type="button"
-                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 flex items-center gap-1"
+                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2 font-medium"
                 disabled={deletingWeek === currentWeek}
-                onClick={handleDelete}
+                onClick={() => setShowDeleteModal(true)}
               >
-                <Trash2 size={14} />
-                {deletingWeek === currentWeek ? 'Deleting...' : 'Delete'}
+                {deletingWeek === currentWeek ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} />
+                    Delete Report
+                  </>
+                )}
               </button>
             </div>
           ) : (
-            <>
-              <input type="file" accept=".pdf,.ppt,.pptx" onChange={e => handleFileChange(e.target.files[0])} />
+            <div className="w-full flex flex-col gap-3">
+              <label className="flex-1 flex flex-col items-center justify-center px-6 py-8 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                <input
+                  type="file"
+                  accept=".pdf,.ppt,.pptx"
+                  onChange={(e) => handleFileChange(e.target.files[0])}
+                  className="hidden"
+                />
+                <div className="text-center">
+                  <svg className="h-10 w-10 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  <p className="text-sm font-medium text-gray-900">
+                    {fileInputs[currentWeek] ? fileInputs[currentWeek].name : 'Click to upload or drag and drop'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">PDF, PPT or PPTX files up to 50MB</p>
+                </div>
+              </label>
               <button
                 type="button"
-                className="mt-2 px-3 py-1 bg-blue-500 text-white rounded"
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 disabled={uploadingWeek === currentWeek || !fileInputs[currentWeek]}
                 onClick={handleUpload}
               >
-                {uploadingWeek === currentWeek ? 'Uploading...' : 'Upload'}
+                {uploadingWeek === currentWeek ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  'Upload Report'
+                )}
               </button>
-            </>
+            </div>
           )}
-          {uploadMsg && <div className="mt-2 text-blue-600 font-semibold">{uploadMsg}</div>}
+          {uploadMsg && (
+            <div className={`text-sm font-medium ${uploadMsg.includes('failed') || uploadMsg.includes('Error') ? 'text-red-600' : 'text-blue-600'}`}>
+              {uploadMsg}
+            </div>
+          )}
         </div>
       </CardContent>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 backdrop-blur-md bg-black/20 flex items-center justify-center">
+          <div className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Delete Week {currentWeek} Report</h3>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete the Week {currentWeek} report? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deletingWeek === currentWeek}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {deletingWeek === currentWeek ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

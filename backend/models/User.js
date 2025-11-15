@@ -33,6 +33,14 @@ const User = sequelize.define('User', {
     // This will be a foreign key, but we don't define the relation here.
     // We'll define all relations in a central models/index.js file later.
     allowNull: true, 
+  },
+  passwordResetToken: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  passwordResetExpires: {
+    type: DataTypes.DATE,
+    allowNull: true,
   }
 }, {
   tableName: 'users',

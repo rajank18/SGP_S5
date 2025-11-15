@@ -124,6 +124,16 @@ const Login = () => {
                                 />
                             </div>
 
+                            <div className="flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/auth/forgot-password')}
+                                    className="text-sm text-gray-300 hover:text-white transition-colors"
+                                >
+                                    Forgot password?
+                                </button>
+                            </div>
+
                             <AnimatePresence>
                                 {error && (
                                     <motion.div

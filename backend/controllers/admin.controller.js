@@ -1,8 +1,9 @@
-import { Course, CourseFaculty, User, CourseRubric, Rubric } from '../models/index.js';
+import { Course, CourseFaculty, User, CourseRubric, Rubric, Project, ProjectParticipant, Evaluation } from '../models/index.js';
 import bcrypt from 'bcryptjs';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
 import nodemailer from 'nodemailer';
+import ExcelJS from 'exceljs';
 
 // Create a new course
 export const createCourse = async (req, res) => {
@@ -564,3 +565,203 @@ export const sendStudentEmails = async (req, res) => {
     });
   }
 };
+
+// Export master data to Excel
+export const exportMasterData = async (req, res) => {
+  try {
+    // Fetch all courses with their projects and evaluations
+    const courses = await Course.findAll({
+      include: [
+        {
+          model: Project,
+          as: 'projects',
+          include: [
+            {
+              model: ProjectParticipant,
+              as: 'participants',
+              include: [
+                {
+                  model: User,
+                  as: 'student',
+                  attributes: ['id', 'name', 'email']
+                }
+              ]
+            },
+            {
+              model: User,
+              as: 'internalGuide',
+              attributes: ['id', 'name']
+            },
+            {
+              model: Evaluation,
+              as: 'evaluations',
+              include: [
+                {
+                  model: Rubric,
+                  as: 'rubric',
+                  attributes: ['id', 'title']
+                },
+                {
+                  model: User,
+                  as: 'evaluator',
+                  attributes: ['id', 'name']
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    });
+
+    // Create a new workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Master Data');
+
+    // Define column headers
+    const headers = [
+      'Course Code',
+      'Course Name',
+      'Group Number',
+      'Group Name',
+      'Project Title',
+      'Project Description',
+      'Internal Guide Name',
+      'External Guide Name',
+      'Student Names',
+      'Student Emails',
+      'GitHub Link',
+      'Final Report Link',
+      'PPT Link',
+      'Rubric Name',
+      'Score',
+      'Max Score',
+      'Evaluated By',
+      'Evaluation Date'
+    ];
+
+    // Set column widths
+    worksheet.columns = [
+      { header: 'Course Code', key: 'courseCode', width: 15 },
+      { header: 'Course Name', key: 'courseName', width: 25 },
+      { header: 'Group Number', key: 'groupNumber', width: 12 },
+      { header: 'Group Name', key: 'groupName', width: 20 },
+      { header: 'Project Title', key: 'projectTitle', width: 25 },
+      { header: 'Project Description', key: 'projectDescription', width: 30 },
+      { header: 'Internal Guide Name', key: 'internalGuideName', width: 20 },
+      { header: 'External Guide Name', key: 'externalGuideName', width: 20 },
+      { header: 'Student Names', key: 'studentNames', width: 25 },
+      { header: 'Student Emails', key: 'studentEmails', width: 30 },
+      { header: 'GitHub Link', key: 'githubLink', width: 30 },
+      { header: 'Final Report Link', key: 'reportLink', width: 30 },
+      { header: 'PPT Link', key: 'pptLink', width: 30 },
+      { header: 'Rubric Name', key: 'rubricName', width: 20 },
+      { header: 'Score', key: 'score', width: 10 },
+      { header: 'Max Score', key: 'maxScore', width: 10 },
+      { header: 'Evaluated By', key: 'evaluatedBy', width: 20 },
+      { header: 'Evaluation Date', key: 'evaluationDate', width: 15 }
+    ];
+
+    // Style the header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+    headerRow.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+
+    // Populate data rows
+    let rowIndex = 2;
+    for (const course of courses) {
+      for (const project of course.projects || []) {
+        // Get students for this project
+        const students = project.participants || [];
+        const studentNames = students.map(p => p.student?.name || 'Unknown').join(', ');
+        const studentEmails = students.map(p => p.student?.email || 'Unknown').join(', ');
+
+        // Get evaluations for this project
+        const evaluations = project.evaluations || [];
+        if (evaluations.length === 0) {
+          // Add one row without evaluation data
+          const row = worksheet.getRow(rowIndex);
+          row.values = {
+            courseCode: course.courseCode,
+            courseName: course.name,
+            groupNumber: project.groupNo,
+            groupName: project.groupName,
+            projectTitle: project.title,
+            projectDescription: project.description,
+            internalGuideName: project.internalGuide?.name || 'N/A',
+            externalGuideName: project.externalGuideName || 'N/A',
+            studentNames: studentNames || 'N/A',
+            studentEmails: studentEmails || 'N/A',
+            githubLink: project.fileUrl || 'N/A',
+            reportLink: project.projectReportUrl || 'N/A',
+            pptLink: project.presentationUrl || 'N/A',
+            rubricName: 'N/A',
+            score: 'N/A',
+            maxScore: 'N/A',
+            evaluatedBy: 'N/A',
+            evaluationDate: 'N/A'
+          };
+          styleDataRow(row);
+          rowIndex++;
+        } else {
+          // Add a row for each evaluation
+          for (let i = 0; i < evaluations.length; i++) {
+            const evaluation = evaluations[i];
+            const row = worksheet.getRow(rowIndex);
+            
+            // Only show project info on first evaluation row
+            row.values = {
+              courseCode: i === 0 ? course.courseCode : '',
+              courseName: i === 0 ? course.name : '',
+              groupNumber: i === 0 ? project.groupNo : '',
+              groupName: i === 0 ? project.groupName : '',
+              projectTitle: i === 0 ? project.title : '',
+              projectDescription: i === 0 ? project.description : '',
+              internalGuideName: i === 0 ? (project.internalGuide?.name || 'N/A') : '',
+              externalGuideName: i === 0 ? (project.externalGuideName || 'N/A') : '',
+              studentNames: i === 0 ? (studentNames || 'N/A') : '',
+              studentEmails: i === 0 ? (studentEmails || 'N/A') : '',
+              githubLink: i === 0 ? (project.fileUrl || 'N/A') : '',
+              reportLink: i === 0 ? (project.projectReportUrl || 'N/A') : '',
+              pptLink: i === 0 ? (project.presentationUrl || 'N/A') : '',
+              rubricName: evaluation.rubric?.title || 'Unknown Rubric',
+              score: evaluation.totalMarks || 'N/A',
+              maxScore: 'N/A', // Will be calculated from rubric criteria
+              evaluatedBy: evaluation.evaluator?.name || 'Unknown',
+              evaluationDate: evaluation.createdAt ? new Date(evaluation.createdAt).toLocaleDateString() : 'N/A'
+            };
+            styleDataRow(row);
+            rowIndex++;
+          }
+        }
+      }
+    }
+
+    // Generate the file
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    // Set response headers
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=master_data.xlsx');
+    res.send(buffer);
+
+  } catch (error) {
+    console.error('Error exporting master data:', error);
+    res.status(500).json({
+      message: 'Error exporting master data',
+      error: error.message
+    });
+  }
+};
+
+// Helper function to style data rows
+function styleDataRow(row) {
+  row.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+  row.font = { size: 11 };
+  row.border = {
+    top: { style: 'thin' },
+    left: { style: 'thin' },
+    bottom: { style: 'thin' },
+    right: { style: 'thin' }
+  };
+}

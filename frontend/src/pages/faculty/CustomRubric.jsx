@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation'
 
 const initialCriteria = [
   { name: 'Weekly Progress & Reporting', description: 'Evaluates consistency, discipline, and communication throughout the semester.', maxScore: 20 },
@@ -57,6 +58,9 @@ const CustomRubric = ({ redirectBase = '/faculty/rubrics' }) => {
   return (
     <div className="bg-gray-100 min-h-screen p-8">
       <div className="max-w-4xl mx-auto bg-white rounded-xl shadow p-6">
+        <div className="mb-4">
+          <BreadcrumbNavigation />
+        </div>
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold text-gray-800">Create Custom Rubric</h1>
           <button onClick={() => navigate(-1)} className="text-indigo-700">Cancel</button>

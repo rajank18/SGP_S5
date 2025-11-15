@@ -17,6 +17,7 @@ export default function WeeklyReportsCarousel({ projectId, project, weeklyReport
   const [uploadingWeek, setUploadingWeek] = useState(null);
   const [deletingWeek, setDeletingWeek] = useState(null);
   const [uploadMsg, setUploadMsg] = useState('');
+  const [localWeeklyReports, setLocalWeeklyReports] = useState(() => Array.isArray(weeklyReports) ? weeklyReports.slice() : []);
   const weekRefs = useRef([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 

@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import toast from 'react-hot-toast';
-import { Save, ArrowLeft } from 'lucide-react';
+import { Save, ArrowLeft, Award } from 'lucide-react';
 
 const ProjectEvaluation = () => {
   const { courseId, projectId } = useParams();

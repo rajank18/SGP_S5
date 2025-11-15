@@ -38,6 +38,11 @@ const BreadcrumbNavigation = ({ lastLabel }) => {
           return null;
         }
 
+        // Hide the 'groups' segment on faculty course/group pages (we show only the group name)
+        if (baseSegment === 'faculty' && value === 'groups') {
+          return null;
+        }
+
         const to = `/${baseSegment}/${pathnames.slice(1, index + 1).join('/')}`;
         const isLast = index === pathnames.length - 1;
         const displayName = breadcrumbNameMap[value] || value;

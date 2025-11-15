@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation';
 import { ExternalLink, ClipboardCheck, FileText, FileDown, Presentation, Mail, Calendar, X } from 'lucide-react';
 
 const GroupDetailsPage = () => {
@@ -138,8 +139,11 @@ const GroupDetailsPage = () => {
 
     return (
         <div className="bg-gray-50 min-h-screen p-4 md:p-8">
-            <div className="max-w-6xl mx-auto">
-                <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 bg-white p-6 rounded-xl shadow">
+                <div className="max-w-6xl mx-auto">
+                    <header className="mb-6">
+                        <BreadcrumbNavigation lastLabel={project ? (project.groupName || `Group ${project.groupNo}`) : undefined} />
+                    </header>
+                    <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 bg-white p-6 rounded-xl shadow">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{project.title}</h1>
                         <div className="text-gray-600 mt-1">

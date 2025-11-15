@@ -1,4 +1,5 @@
 import WeeklyReportsCarousel from '@/components/student/WeeklyReportsCarousel';
+import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ExternalLink, Trash2, Award, X } from 'lucide-react';
@@ -241,6 +242,7 @@ const StudentProjectDetails = () => {
   return (
     <div className="bg-gray-50 min-h-screen p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
+        <BreadcrumbNavigation lastLabel={project ? (project.groupName || `Group ${project.groupNo}`) : undefined} />
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 bg-white p-6 rounded-xl shadow">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{project.title}</h1>
@@ -352,7 +354,9 @@ const StudentProjectDetails = () => {
                       </a>
                     </div>
                   ) : (
-                    <p className="text-gray-500 italic text-sm">No repository URL provided yet.</p>
+                    <div className="pt-2 border-t border-gray-200">
+                      <div className="text-gray-500 italic text-sm">No repository URL provided yet.</div>
+                    </div>
                   )}
                 </div>
 
@@ -509,7 +513,7 @@ const StudentProjectDetails = () => {
 
           {/* Weekly Reports - Centered */}
           <section className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
-            <div className="text-center mb-6">
+            <div className="text-center mb-2">
               <h2 className="text-2xl font-semibold text-gray-800">Weekly Reports</h2>
               <p className="text-gray-500 mt-1">Track your project progress with weekly updates</p>
             </div>
@@ -517,9 +521,9 @@ const StudentProjectDetails = () => {
             {/* Centered carousel card */}
             <div className="w-full flex justify-center">
               <div className="w-full max-w-3xl p-6 rounded-xl ">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm text-gray-600">Weeks</div>
-                  <div className="text-sm text-gray-500">{project.groupName ? project.groupName : `Group ${project.groupNo}`}</div>
+                <div className="flex items-center justify-between ">
+                  {/* <div className="text-sm text-gray-600">Weeks</div>
+                  <div className="text-sm text-gray-500">{project.groupName ? project.groupName : `Group ${project.groupNo}`}</div> */}
                 </div>
                 <WeeklyReportsCarousel
                   projectId={projectId}

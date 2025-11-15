@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import BackButton from '@/components/ui/BackButton';
+import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion'
 
@@ -61,6 +62,7 @@ const Dashboard = () => {
             <div className="max-w-7xl mx-auto">
 
                 <div className="mb-6">
+                    <BreadcrumbNavigation />
                     <h1 className="text-3xl font-bold text-gray-800">My Assigned Courses</h1>
                 </div>
                 

@@ -486,19 +486,27 @@ const StudentProjectDetails = () => {
           </div>
 
           {/* Weekly Reports - Centered */}
-          <section className="bg-white rounded-xl shadow p-6">
+          <section className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
             <div className="text-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-800">Weekly Reports</h2>
+              <h2 className="text-2xl font-semibold text-gray-800">Weekly Reports</h2>
               <p className="text-gray-500 mt-1">Track your project progress with weekly updates</p>
             </div>
-            <div className="max-w-4xl mx-auto">
-              <WeeklyReportsCarousel
-                projectId={projectId}
-                project={project}
-                weeklyReports={project.weeklyReportUrls ? (typeof project.weeklyReportUrls === 'string' ? JSON.parse(project.weeklyReportUrls) : project.weeklyReportUrls) || [] : []}
-                token={token}
-                reloadProject={load}
-              />
+
+            {/* Centered carousel card */}
+            <div className="w-full flex justify-center">
+              <div className="w-full max-w-3xl p-6 rounded-xl ">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-gray-600">Weeks</div>
+                  <div className="text-sm text-gray-500">{project.groupName ? project.groupName : `Group ${project.groupNo}`}</div>
+                </div>
+                <WeeklyReportsCarousel
+                  projectId={projectId}
+                  project={project}
+                  weeklyReports={project.weeklyReportUrls ? (typeof project.weeklyReportUrls === 'string' ? JSON.parse(project.weeklyReportUrls) : project.weeklyReportUrls) || [] : []}
+                  token={token}
+                  reloadProject={load}
+                />
+              </div>
             </div>
           </section>
         </main>

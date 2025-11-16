@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { apiFetch } from '@/lib/api';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Plus, Trash2 } from 'lucide-react';
 
 const MAX_DEFAULT_WEEKS = 5;

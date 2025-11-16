@@ -42,6 +42,11 @@ const corsOptions = {
 }
 
 app.use(cors(corsOptions))
+app.use(cors({
+  origin: 'https://pro-grade.vercel.app', // Allow only your frontend origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
+  credentials: true // If your frontend sends cookies/authentication headers
+}));
 // The global CORS middleware above handles preflight; avoid adding an options route here
 // because certain path patterns can trigger path-to-regexp parsing errors in older deps.
 // If explicit OPTIONS handling is required, use a safer path or add per-route handling.

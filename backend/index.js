@@ -19,16 +19,39 @@ import evaluationRoutes from './routes/evaluation.route.js';
 // Import models index to ensure associations are set up
 import './models/index.js';
 
-// FRONTEND_ORIGIN: set this in Render to your frontend URL (e.g. https://your-app.onrender.com)
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+// FRONTEND_ORIGIN or FRONTEND_ORIGINS: set these in Render to your frontend URL(s)
+// Example: FRONTEND_ORIGIN=https://prograde-yourapp.vercel.app
+// Or multiple origins: FRONTEND_ORIGINS=https://site1.com,https://site2.com
+const FRONTEND_ORIGINS = (process.env.FRONTEND_ORIGINS || process.env.FRONTEND_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
+
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // --- Middlewares ---
-// Using the CORS origin from your file
-app.use(cors({ origin: FRONTEND_ORIGIN }));
-app.use(express.json());
+// Configure CORS dynamically so the server responds to browser preflight requests
+const corsOptions = {
+  origin: function (origin, callback) {
+    // allow non-browser tools like Postman (no origin)
+    if (!origin) return callback(null, true)
+    if (FRONTEND_ORIGINS.indexOf(origin) !== -1) {
+      return callback(null, true)
+    }
+    // Not allowed by CORS
+    return callback(new Error('CORS policy: Origin not allowed'), false)
+  },
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  credentials: true,
+}
+
+app.use(cors(corsOptions))
+// Make sure express responds to preflight requests
+app.options('*', cors(corsOptions))
+app.use(express.json())
 
 // --- API Routes ---
 app.use('/api/auth', authRoutes);

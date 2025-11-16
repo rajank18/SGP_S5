@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiFetch } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Plus, Trash2 } from 'lucide-react';
 
@@ -31,7 +32,7 @@ export default function WeeklyReportsCard({ projectId, weeklyReports = [], token
       const formData = new FormData();
       formData.append('file', file);
       formData.append('week', week);
-      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}/upload-weekly-report`, {
+      const res = await apiFetch(`/api/student/projects/${projectId}/upload-weekly-report`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -54,7 +55,7 @@ export default function WeeklyReportsCard({ projectId, weeklyReports = [], token
     setDeletingWeek(week);
     setUploadMsg('');
     try {
-      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}/delete-weekly-report/${week}`, {
+      const res = await apiFetch(`/api/student/projects/${projectId}/delete-weekly-report/${week}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

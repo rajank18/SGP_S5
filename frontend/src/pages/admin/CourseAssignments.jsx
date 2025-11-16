@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '@/lib/api';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,10 +29,10 @@ const CourseAssignments = () => {
             const token = localStorage.getItem('prograde_token');
             const headers = { Authorization: `Bearer ${token}` };
             const [cRes, fRes, rRes, aRes] = await Promise.all([
-                fetch('http://localhost:3001/api/admin/courses', { headers }),
-                fetch('http://localhost:3001/api/admin/faculty', { headers }),
-                fetch('http://localhost:3001/api/rubrics', { headers }),
-                fetch('http://localhost:3001/api/admin/course-assignments', { headers }),
+                apiFetch('/api/admin/courses', { headers }),
+                apiFetch('/api/admin/faculty', { headers }),
+                apiFetch('/api/rubrics', { headers }),
+                apiFetch('/api/admin/course-assignments', { headers }),
             ]);
             setCourses(await cRes.json());
             setFaculty(await fRes.json());
@@ -52,7 +53,7 @@ const CourseAssignments = () => {
         }
         try {
             const token = localStorage.getItem('prograde_token');
-            const res = await fetch(`http://localhost:3001/api/admin/courses/${selectedCourse}/faculty`, {
+            const res = await apiFetch(`/api/admin/courses/${selectedCourse}/faculty`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ 
@@ -89,7 +90,7 @@ const CourseAssignments = () => {
         if (!window.confirm('Are you sure you want to remove this assignment?')) return;
         try {
             const token = localStorage.getItem('prograde_token');
-            const res = await fetch(`http://localhost:3001/api/admin/courses/${courseId}/faculty/${facultyId}`, {
+            const res = await apiFetch(`/api/admin/courses/${courseId}/faculty/${facultyId}`, {
                 method: 'DELETE', headers: { Authorization: `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to remove assignment');

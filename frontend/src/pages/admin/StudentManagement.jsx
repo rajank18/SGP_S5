@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { UploadCloud, FileText, UserCheck, UserX, Users, ChevronDown, ChevronUp, X, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation';
+import apiFetch from '@/lib/api'
 import Papa from 'papaparse';
 
 const StudentManagement = () => {
@@ -28,12 +29,12 @@ const StudentManagement = () => {
     const fetchStudents = async () => {
         try {
             const token = localStorage.getItem('prograde_token');
-            const res = await fetch('http://localhost:3001/api/admin/students', {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!res.ok) throw new Error('Failed to fetch students');
-            const data = await res.json();
-            setStudents(data);
+                    const res = await apiFetch('/api/admin/students', {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    if (!res.ok) throw new Error('Failed to fetch students');
+                    const data = await res.json();
+                    setStudents(data);
         } catch (err) {
             toast.error(err.message);
         }
@@ -77,7 +78,7 @@ const StudentManagement = () => {
             const token = localStorage.getItem('prograde_token');
             const formData = new FormData();
             formData.append('file', file);
-            const res = await fetch('http://localhost:3001/api/admin/upload-students', {
+            const res = await apiFetch('/api/admin/upload-students', {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData,
@@ -108,7 +109,7 @@ const StudentManagement = () => {
         setSendingEmails(true);
         try {
             const token = localStorage.getItem('prograde_token');
-            const res = await fetch('http://localhost:3001/api/admin/send-emails', {
+            const res = await apiFetch('/api/admin/send-emails', {
                 method: 'POST',
                 headers: { 
                     Authorization: `Bearer ${token}`,

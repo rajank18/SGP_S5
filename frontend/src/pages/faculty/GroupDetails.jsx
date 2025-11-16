@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation';
+import { apiFetch } from '@/lib/api';
 import { ExternalLink, ClipboardCheck, FileText, FileDown, Presentation, Mail, Calendar, X } from 'lucide-react';
 
 const GroupDetailsPage = () => {
@@ -55,7 +56,7 @@ const GroupDetailsPage = () => {
         }
 
         try {
-            const response = await fetch(`http://localhost:3001/api/faculty/courses/${course.id}/projects/${project.id}/notify-students`, {
+            const response = await apiFetch(`/api/faculty/courses/${course.id}/projects/${project.id}/notify-students`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -103,9 +104,9 @@ const GroupDetailsPage = () => {
             setError('');
             try {
                 // Get assigned courses, find by courseCode
-                const coursesRes = await fetch('http://localhost:3001/api/faculty/courses', {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                    const coursesRes = await apiFetch('/api/faculty/courses', {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
                 if (!coursesRes.ok) throw new Error('Failed to fetch courses');
                 const coursesData = await coursesRes.json();
                 const foundCourse = (coursesData.courses || []).find(c => String(c.courseCode) === String(courseCode));
@@ -113,7 +114,7 @@ const GroupDetailsPage = () => {
                 setCourse(foundCourse);
 
                 // Fetch this course's projects, then find by groupNo
-                const projectsRes = await fetch(`http://localhost:3001/api/faculty/courses/${foundCourse.id}/projects`, {
+                const projectsRes = await apiFetch(`/api/faculty/courses/${foundCourse.id}/projects`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 if (!projectsRes.ok) throw new Error('Failed to fetch projects');

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation'
+import apiFetch from '@/lib/api'
 
 const AdminRubricDetails = () => {
   const { id } = useParams()
@@ -13,7 +14,7 @@ const AdminRubricDetails = () => {
     const fetchRubric = async () => {
       try {
         const token = localStorage.getItem('prograde_token')
-        const res = await fetch(`http://localhost:3001/api/rubrics/${id}`, {
+        const res = await apiFetch(`/api/rubrics/${id}`, {
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         })
         const data = await res.json().catch(() => ({}))

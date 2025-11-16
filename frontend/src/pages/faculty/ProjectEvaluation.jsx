@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import toast from 'react-hot-toast';
 import { Save, ArrowLeft, Award } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
 const ProjectEvaluation = () => {
   const { courseId, projectId } = useParams();
@@ -30,7 +31,7 @@ const ProjectEvaluation = () => {
     try {
       setLoading(true);
       // Fetch rubrics
-      const rubricsRes = await fetch(`http://localhost:3001/api/evaluations/faculty/courses/${courseId}/projects/${projectId}/rubrics`, {
+      const rubricsRes = await apiFetch(`/api/evaluations/faculty/courses/${courseId}/projects/${projectId}/rubrics`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -69,8 +70,8 @@ const ProjectEvaluation = () => {
 
     // Try to fetch existing evaluation
     try {
-      const res = await fetch(
-        `http://localhost:3001/api/evaluations/faculty/evaluations/${projectId}/${rubric.id}`,
+      const res = await apiFetch(
+        `/api/evaluations/faculty/evaluations/${projectId}/${rubric.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -155,7 +156,7 @@ const ProjectEvaluation = () => {
 
     setSaving(true);
     try {
-      const res = await fetch('http://localhost:3001/api/evaluations/faculty/evaluations', {
+      const res = await apiFetch('/api/evaluations/faculty/evaluations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

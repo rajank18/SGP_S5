@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '@/lib/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,8 +24,7 @@ const ProjectEvaluations = () => {
       setLoading(true);
       
       // Fetch evaluations
-      const res = await fetch(
-        `http://localhost:3001/api/evaluations/student/projects/${projectId}/evaluations`,
+      const res = await apiFetch(`/api/evaluations/student/projects/${projectId}/evaluations`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -35,8 +35,8 @@ const ProjectEvaluations = () => {
       
       // Try to fetch project details
       try {
-        const projectRes = await fetch(
-          `http://localhost:3001/api/student/projects/${projectId}`,
+        const projectRes = await apiFetch(
+          `/api/student/projects/${projectId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (projectRes.ok) {

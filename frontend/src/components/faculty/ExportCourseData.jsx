@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import toast from "react-hot-toast";
+import apiFetch from '@/lib/api'
 import { Download, Loader, X } from "lucide-react";
 import { generateExcelExport, generateCSVExport } from "@/utils/exportToExcel";
 
@@ -22,16 +23,13 @@ const ExportCourseData = ({ courseId, courseName }) => {
 
         setLoading(true);
         try {
-            const response = await fetch(
-                `http://localhost:3001/api/faculty/courses/${courseId}/export`,
-                {
-                    method: "GET",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
+            const response = await apiFetch(`/api/faculty/courses/${courseId}/export`, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
 
             if (!response.ok) {
                 const err = await response.json();

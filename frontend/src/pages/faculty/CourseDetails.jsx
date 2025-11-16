@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation';
+import apiFetch from '@/lib/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
 import { UploadCloud, ChevronDown, ChevronUp } from 'lucide-react';
@@ -41,7 +42,7 @@ const CourseDetailsPage = () => {
             setLoadingCourse(true);
             setCourseError("");
             try {
-                const res = await fetch(`http://localhost:3001/api/faculty/courses`, {
+                const res = await apiFetch(`/api/faculty/courses`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 if (!res.ok) throw new Error("Failed to fetch assigned courses");
@@ -65,7 +66,7 @@ const CourseDetailsPage = () => {
         setGroupsError('');
         try {
             // Use course.id from fetched course object
-            const res = await fetch(`http://localhost:3001/api/faculty/courses/${course?.id}/projects`, {
+            const res = await apiFetch(`/api/faculty/courses/${course?.id}/projects`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) throw new Error('Failed to fetch project groups');
@@ -149,7 +150,7 @@ const CourseDetailsPage = () => {
             const formData = new FormData();
             formData.append('file', file);
 
-            const res = await fetch(`http://localhost:3001/api/faculty/courses/${course?.id}/projects/upload`, {
+            const res = await apiFetch(`/api/faculty/courses/${course?.id}/projects/upload`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`

@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import BreadcrumbNavigation from "@/components/ui/BreadcrumNavigation";
 import Modal from "@/components/ui/Modal";
+import apiFetch from '@/lib/api'
 
 const FacultyManagement = () => {
   const [faculty, setFaculty] = useState([]);
@@ -40,7 +41,7 @@ const FacultyManagement = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("prograde_token");
-      const res = await fetch("http://localhost:3001/api/admin/faculty", {
+      const res = await apiFetch('/api/admin/faculty', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch faculty");
@@ -57,14 +58,14 @@ const FacultyManagement = () => {
     try {
       const token = localStorage.getItem("prograde_token");
       const url = editingFaculty
-        ? `http://localhost:3001/api/admin/faculty/${editingFaculty.id}`
-        : "http://localhost:3001/api/admin/faculty";
+        ? `/api/admin/faculty/${editingFaculty.id}`
+        : "/api/admin/faculty";
       const method = editingFaculty ? "PUT" : "POST";
       const body = { ...formData, role: "faculty" };
       if (editingFaculty && !body.password) {
         delete body.password;
       }
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
@@ -87,7 +88,7 @@ const FacultyManagement = () => {
     if (!window.confirm("Delete this faculty member?")) return;
     try {
       const token = localStorage.getItem("prograde_token");
-      const res = await fetch(`http://localhost:3001/api/admin/faculty/${id}`, {
+      const res = await apiFetch(`/api/admin/faculty/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

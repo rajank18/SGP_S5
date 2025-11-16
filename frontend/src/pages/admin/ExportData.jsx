@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
+import apiFetch from '@/lib/api';
 import { motion } from 'framer-motion';
 import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation';
 
@@ -13,7 +14,7 @@ const ExportData = () => {
     try {
       const token = localStorage.getItem('prograde_token');
       
-      const response = await fetch('http://localhost:3001/api/admin/export-master-data', {
+      const response = await apiFetch('/api/admin/export-master-data', {
         headers: {
           Authorization: `Bearer ${token}`,
         },

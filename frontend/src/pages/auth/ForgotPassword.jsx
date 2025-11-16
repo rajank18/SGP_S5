@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
+import apiFetch from '@/lib/api'
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Mail } from 'lucide-react';
@@ -25,7 +26,7 @@ const ForgotPassword = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/auth/forgot-password', {
+      const response = await apiFetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation'
+import apiFetch from '@/lib/api'
 
 const initialCriteria = [
   { name: 'Weekly Progress & Reporting', description: 'Evaluates consistency, discipline, and communication throughout the semester.', maxScore: 20 },
@@ -40,7 +41,7 @@ const CustomRubric = ({ redirectBase = '/faculty/rubrics' }) => {
         return
       }
       const body = { title, description, criteria }
-      const res = await fetch('http://localhost:3001/api/rubrics', {
+      const res = await apiFetch('/api/rubrics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(body)

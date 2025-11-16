@@ -1,9 +1,9 @@
 import { Route, Routes, Navigate } from 'react-router-dom'
-import Auth from '../layout/Auth'
-import Login from '../pages/auth/Login'
-import ForgotPassword from '../pages/auth/ForgotPassword'
-import ResetPassword from '../pages/auth/ResetPassword'
-import ChangePassword from '../pages/auth/ChangePassword'
+// import Auth from '../layout/Auth.jsx'
+import Login from '../pages/auth/Login.jsx'
+import ForgotPassword from '../pages/auth/ForgotPassword.jsx'
+import ResetPassword from '../pages/auth/ResetPassword.jsx'
+import ChangePassword from '../pages/auth/ChangePassword.jsx'
 
 //imports auth pages
 

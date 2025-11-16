@@ -5,6 +5,7 @@ import { BookOpen, Users, ClipboardList, UserPlus, Download } from 'lucide-react
 import toast from 'react-hot-toast';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumNavigation'; // Import the new component
 import { motion } from 'framer-motion'
+import apiFetch from '@/lib/api'
 
 const StatCard = ({ title, value, icon: Icon, iconBgColor, onClick, delay = 0 }) => (
   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay }}>
@@ -40,10 +41,10 @@ const AdminDashboard = () => {
       const token = localStorage.getItem('prograde_token');
       const headers = { Authorization: `Bearer ${token}` };
       const [coursesRes, facultyRes, assignmentsRes, rubricsRes] = await Promise.all([
-        fetch('http://localhost:3001/api/admin/courses', { headers }),
-        fetch('http://localhost:3001/api/admin/faculty', { headers }),
-        fetch('http://localhost:3001/api/admin/course-assignments', { headers }),
-        fetch('http://localhost:3001/api/rubrics', { headers }),
+        apiFetch('/api/admin/courses', { headers }),
+        apiFetch('/api/admin/faculty', { headers }),
+        apiFetch('/api/admin/course-assignments', { headers }),
+        apiFetch('/api/rubrics', { headers }),
       ]);
       setCourses(await coursesRes.json());
       setFaculty(await facultyRes.json());

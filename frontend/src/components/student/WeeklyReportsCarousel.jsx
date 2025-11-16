@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { apiFetch } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { ChevronLeft, ChevronRight, Plus, Trash2, X } from 'lucide-react';
 
@@ -28,7 +29,7 @@ export default function WeeklyReportsCarousel({ projectId, project, weeklyReport
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}`, {
+      const res = await apiFetch(`/api/student/projects/${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -70,7 +71,7 @@ export default function WeeklyReportsCarousel({ projectId, project, weeklyReport
     if (existingReport) {
       try {
         setDeletingWeek(lastWeek);
-        const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}/delete-weekly-report/${lastWeek}`, {
+        const res = await apiFetch(`/api/student/projects/${projectId}/delete-weekly-report/${lastWeek}`, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -110,7 +111,7 @@ export default function WeeklyReportsCarousel({ projectId, project, weeklyReport
       const formData = new FormData();
       formData.append('file', file);
       formData.append('week', currentWeek);
-      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}/upload-weekly-report`, {
+      const res = await apiFetch(`/api/student/projects/${projectId}/upload-weekly-report`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -137,7 +138,7 @@ export default function WeeklyReportsCarousel({ projectId, project, weeklyReport
     setDeletingWeek(currentWeek);
     setUploadMsg('');
     try {
-      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}/delete-weekly-report/${currentWeek}`, {
+        const res = await apiFetch(`/api/student/projects/${projectId}/delete-weekly-report/${currentWeek}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

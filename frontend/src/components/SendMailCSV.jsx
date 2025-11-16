@@ -4,8 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, Mail, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-
-const API_BASE_URL = 'http://localhost:3001';
+import apiFetch from '@/lib/api'
 
 const SendMailCSV = () => {
   const [file, setFile] = useState(null);
@@ -21,10 +20,10 @@ const SendMailCSV = () => {
   const testEmailConfig = async () => {
     try {
       const token = localStorage.getItem("prograde_token");
-      const res = await fetch(`${API_BASE_URL}/api/mail/test-config`, {
+      const res = await apiFetch(`/api/mail/test-config`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         setEmailConfigValid(true);
@@ -72,7 +71,7 @@ const SendMailCSV = () => {
       formData.append("csvFile", file);
 
       const token = localStorage.getItem("prograde_token");
-      const res = await fetch(`${API_BASE_URL}/api/mail/send-bulk`, {
+      const res = await apiFetch(`/api/mail/send-bulk`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

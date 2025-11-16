@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { apiFetch } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 
 const StuDashboard = () => {
@@ -13,7 +14,7 @@ const StuDashboard = () => {
       setLoading(true);
       setError('');
       try {
-        const res = await fetch('http://localhost:3001/api/student/projects', {
+        const res = await apiFetch('/api/student/projects', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error('Failed to fetch your group');

@@ -7,12 +7,13 @@ import { Label } from "@/components/ui/label";
 // import { BackgroundLines } from "@/components/ui/background-lines";
 
 // --- No changes to the API hook ---
+import { apiFetch } from '@/lib/api';
 const useAuthApi = () => {
     const [loading, setLoading] = useState(false);
     const loginUser = async (email, password) => {
         setLoading(true);
         try {
-            const response = await fetch('http://localhost:3001/api/auth/login', {
+            const response = await apiFetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),

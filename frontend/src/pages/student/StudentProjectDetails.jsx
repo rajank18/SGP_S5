@@ -1,6 +1,7 @@
 import WeeklyReportsCarousel from '@/components/student/WeeklyReportsCarousel';
 import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation';
 import React, { useEffect, useState } from 'react';
+import { apiFetch } from '@/lib/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ExternalLink, Trash2, Award, X } from 'lucide-react';
 
@@ -35,7 +36,7 @@ const StudentProjectDetails = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}`, {
+      const res = await apiFetch(`/api/student/projects/${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -58,7 +59,7 @@ const StudentProjectDetails = () => {
     setSavingDescription(true);
     setSaveDescriptionMsg('');
     try {
-      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}`, {
+      const res = await apiFetch(`/api/student/projects/${projectId}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -83,7 +84,7 @@ const StudentProjectDetails = () => {
     setSavingURL(true);
     setSaveURLMsg('');
     try {
-      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}`, {
+      const res = await apiFetch(`/api/student/projects/${projectId}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -111,7 +112,7 @@ const StudentProjectDetails = () => {
     try {
       const formData = new FormData();
       formData.append('file', reportFile);
-      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}/upload-report`, {
+      const res = await apiFetch(`/api/student/projects/${projectId}/upload-report`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -139,7 +140,7 @@ const StudentProjectDetails = () => {
     try {
       const formData = new FormData();
       formData.append('file', presentationFile);
-      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}/upload-presentation`, {
+      const res = await apiFetch(`/api/student/projects/${projectId}/upload-presentation`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -163,7 +164,7 @@ const StudentProjectDetails = () => {
     setDeleteReportMsg('');
     setDeletingReport(true);
     try {
-      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}/delete-report`, {
+      const res = await apiFetch(`/api/student/projects/${projectId}/delete-report`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -186,7 +187,7 @@ const StudentProjectDetails = () => {
     setDeletePresentationMsg('');
     setDeletingPresentation(true);
     try {
-      const res = await fetch(`http://localhost:3001/api/student/projects/${projectId}/delete-presentation`, {
+      const res = await apiFetch(`/api/student/projects/${projectId}/delete-presentation`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

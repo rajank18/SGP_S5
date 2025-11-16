@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
+import apiFetch from '@/lib/api'
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
@@ -49,7 +50,7 @@ const ChangePassword = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/auth/change-password', {
+      const response = await apiFetch('/api/auth/change-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

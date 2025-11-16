@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
+import apiFetch from '@/lib/api'
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Lock } from 'lucide-react';
@@ -66,7 +67,7 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/auth/reset-password', {
+      const response = await apiFetch('/api/auth/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

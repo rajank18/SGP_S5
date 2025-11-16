@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Edit, Trash, PlusCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import apiFetch from '@/lib/api';
 import toast from 'react-hot-toast';
 import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation';
 import Modal from '@/components/ui/Modal'; 
@@ -25,7 +26,7 @@ const CourseManagement = () => {
     const fetchRubrics = async () => {
         try {
             const token = localStorage.getItem('prograde_token');
-            const res = await fetch('http://localhost:3001/api/rubrics', { headers: { Authorization: `Bearer ${token}` } });
+            const res = await apiFetch('/api/rubrics', { headers: { Authorization: `Bearer ${token}` } });
             const data = await res.json().catch(() => ({}))
             if (!res.ok) throw new Error(data.message || 'Failed to fetch rubrics');
             setRubrics(Array.isArray(data.rubrics) ? data.rubrics : []);
@@ -46,7 +47,7 @@ const CourseManagement = () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('prograde_token');
-            const res = await fetch('http://localhost:3001/api/admin/courses', { headers: { Authorization: `Bearer ${token}` } });
+            const res = await apiFetch('/api/admin/courses', { headers: { Authorization: `Bearer ${token}` } });
             if (!res.ok) throw new Error('Failed to fetch courses');
             setCourses(await res.json());
         } catch (err) {
@@ -61,10 +62,10 @@ const CourseManagement = () => {
         try {
             const token = localStorage.getItem('prograde_token');
             const url = editingCourse
-                ? `http://localhost:3001/api/admin/courses/${editingCourse.id}`
-                : 'http://localhost:3001/api/admin/courses';
+                ? `/api/admin/courses/${editingCourse.id}`
+                : '/api/admin/courses';
             const method = editingCourse ? 'PUT' : 'POST';
-            const res = await fetch(url, {
+            const res = await apiFetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify(formData)
@@ -82,7 +83,7 @@ const CourseManagement = () => {
         if (!window.confirm('Delete this course?')) return;
         try {
             const token = localStorage.getItem('prograde_token');
-            const res = await fetch(`http://localhost:3001/api/admin/courses/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+            const res = await apiFetch(`/api/admin/courses/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
             if (!res.ok) throw new Error('Failed to delete');
             toast.success('Course deleted');
             fetchCourses();

@@ -4,6 +4,7 @@ import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation'
 import { motion } from 'framer-motion'
 import { Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import apiFetch from '@/lib/api'
 
 const AdminRubrics = () => {
   const [rubrics, setRubrics] = useState([])
@@ -15,7 +16,7 @@ const AdminRubrics = () => {
   const fetchRubrics = async () => {
     try {
       const token = localStorage.getItem('prograde_token')
-      const res = await fetch('http://localhost:3001/api/rubrics', {
+      const res = await apiFetch('/api/rubrics', {
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
       })
       const data = await res.json().catch(() => ({}))
@@ -42,7 +43,7 @@ const AdminRubrics = () => {
     setDeleting(rubricId)
     try {
       const token = localStorage.getItem('prograde_token')
-      const res = await fetch(`http://localhost:3001/api/rubrics/${rubricId}`, {
+      const res = await apiFetch(`/api/rubrics/${rubricId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       })

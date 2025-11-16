@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation'
+import { apiFetch } from '@/lib/api'
 
 const Rubrics = () => {
   const [rubrics, setRubrics] = useState([])
@@ -17,7 +18,7 @@ const Rubrics = () => {
           setLoading(false)
           return
         }
-        const res = await fetch('http://localhost:3001/api/rubrics', {
+        const res = await apiFetch('/api/rubrics', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

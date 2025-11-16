@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '@/lib/api';
 import BackButton from '@/components/ui/BackButton';
 import BreadcrumbNavigation from '@/components/ui/BreadcrumNavigation';
 import { useNavigate } from 'react-router-dom';
@@ -23,7 +24,7 @@ const Dashboard = () => {
                 return;
             }
 
-            const response = await fetch('http://localhost:3001/api/faculty/courses', {
+            const response = await apiFetch('/api/faculty/courses', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'

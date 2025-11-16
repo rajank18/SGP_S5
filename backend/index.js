@@ -7,17 +7,10 @@ import sequelize, { pool } from './config/db.js'; // Adjust path if necessary
 // Load environment variables FIRST
 dotenv.config();
 
-// Import routes
-import authRoutes from './routes/auth.route.js'; // Make sure you have this file
-import adminRoutes from './routes/admin.route.js';
-import facultyRoutes from './routes/faculty.route.js';
-import studentRoutes from './routes/student.route.js';
-import rubricRoutes from './routes/rubric.route.js';
-import mailRoutes from './routes/mail.route.js';
-import evaluationRoutes from './routes/evaluation.route.js';
-
-// Import models index to ensure associations are set up
-import './models/index.js';
+// We'll dynamically import routes and models inside startServer to
+// surface any import-time errors (e.g. invalid route patterns) with clear logs.
+let authRoutes, adminRoutes, facultyRoutes, studentRoutes, rubricRoutes, mailRoutes, evaluationRoutes
+let modelsImported = false
 
 // FRONTEND_ORIGIN or FRONTEND_ORIGINS: set these in Render to your frontend URL(s)
 // Example: FRONTEND_ORIGIN=https://prograde-yourapp.vercel.app
@@ -49,8 +42,9 @@ const corsOptions = {
 }
 
 app.use(cors(corsOptions))
-// Make sure express responds to preflight requests
-app.options('*', cors(corsOptions))
+// The global CORS middleware above handles preflight; avoid adding an options route here
+// because certain path patterns can trigger path-to-regexp parsing errors in older deps.
+// If explicit OPTIONS handling is required, use a safer path or add per-route handling.
 app.use(express.json())
 
 // --- API Routes ---
@@ -66,13 +60,7 @@ const tryMount = (mountPath, router) => {
   }
 }
 
-tryMount('/api/auth', authRoutes);
-tryMount('/api/admin', adminRoutes);
-tryMount('/api/faculty', facultyRoutes);
-tryMount('/api/student', studentRoutes);
-tryMount('/api/rubrics', rubricRoutes);
-tryMount('/api/mail', mailRoutes);
-tryMount('/api/evaluations', evaluationRoutes);
+// Route mounting will happen after dynamic imports in startServer()
 
 // Health check route
 app.get('/', (req, res) => {
@@ -83,6 +71,46 @@ app.get('/', (req, res) => {
 const startServer = async () => {
   try {
     console.log('Starting server...');
+
+    // Dynamically import models and routes so we can report import-time failures
+    try {
+      console.log('Importing models...')
+      await import('./models/index.js')
+      modelsImported = true
+    } catch (err) {
+      console.error('Failed importing models:', err && err.message)
+      throw err
+    }
+
+    try {
+      console.log('Importing routes...')
+      authRoutes = (await import('./routes/auth.route.js')).default
+      console.log(' - auth.route imported')
+      adminRoutes = (await import('./routes/admin.route.js')).default
+      console.log(' - admin.route imported')
+      facultyRoutes = (await import('./routes/faculty.route.js')).default
+      console.log(' - faculty.route imported')
+      studentRoutes = (await import('./routes/student.route.js')).default
+      console.log(' - student.route imported')
+      rubricRoutes = (await import('./routes/rubric.route.js')).default
+      console.log(' - rubric.route imported')
+      mailRoutes = (await import('./routes/mail.route.js')).default
+      console.log(' - mail.route imported')
+      evaluationRoutes = (await import('./routes/evaluation.route.js')).default
+      console.log(' - evaluation.route imported')
+    } catch (err) {
+      console.error('Failed importing a route module:', err && err.message)
+      throw err
+    }
+
+    // Mount routers now that they've been imported successfully
+    tryMount('/api/auth', authRoutes);
+    tryMount('/api/admin', adminRoutes);
+    tryMount('/api/faculty', facultyRoutes);
+    tryMount('/api/student', studentRoutes);
+    tryMount('/api/rubrics', rubricRoutes);
+    tryMount('/api/mail', mailRoutes);
+    tryMount('/api/evaluations', evaluationRoutes);
 
     const server = app.listen(PORT, () => {
       console.log(`🚀 Server is running on http://localhost:${PORT}`);

@@ -26,22 +26,22 @@ const PORT = process.env.PORT || 3001;
 
 // --- Middlewares ---
 // Configure CORS dynamically so the server responds to browser preflight requests
-const corsOptions = {
-  origin: function (origin, callback) {
-    // allow non-browser tools like Postman (no origin)
-    if (!origin) return callback(null, true)
-    if (FRONTEND_ORIGINS.indexOf(origin) !== -1) {
-      return callback(null, true)
-    }
-    // Not allowed by CORS
-    return callback(new Error('CORS policy: Origin not allowed'), false)
-  },
-  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  credentials: true,
-}
+// const corsOptions = {
+//   origin: function (origin, callback) {
+//     // allow non-browser tools like Postman (no origin)
+//     if (!origin) return callback(null, true)
+//     if (FRONTEND_ORIGINS.indexOf(origin) !== -1) {
+//       return callback(null, true)
+//     }
+//     // Not allowed by CORS
+//     return callback(new Error('CORS policy: Origin not allowed'), false)
+//   },
+//   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+//   credentials: true,
+// }
 
-app.use(cors(corsOptions))
+// app.use(cors(corsOptions))
 app.use(cors({
   origin: 'https://pro-grade.vercel.app', // Allow only your frontend origin
   methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods

@@ -54,13 +54,25 @@ app.options('*', cors(corsOptions))
 app.use(express.json())
 
 // --- API Routes ---
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/faculty', facultyRoutes);
-app.use('/api/student', studentRoutes);
-app.use('/api/rubrics', rubricRoutes);
-app.use('/api/mail', mailRoutes);
-app.use('/api/evaluations', evaluationRoutes);
+// Mount routers with guards to surface any invalid route path errors during startup
+const tryMount = (mountPath, router) => {
+  try {
+    console.log(`Mounting ${mountPath}`)
+    app.use(mountPath, router)
+  } catch (err) {
+    console.error(`Failed mounting ${mountPath}:`, err && err.message)
+    // Re-throw to allow the process to exit with a clear error in deploy logs
+    throw err
+  }
+}
+
+tryMount('/api/auth', authRoutes);
+tryMount('/api/admin', adminRoutes);
+tryMount('/api/faculty', facultyRoutes);
+tryMount('/api/student', studentRoutes);
+tryMount('/api/rubrics', rubricRoutes);
+tryMount('/api/mail', mailRoutes);
+tryMount('/api/evaluations', evaluationRoutes);
 
 // Health check route
 app.get('/', (req, res) => {

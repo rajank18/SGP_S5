@@ -8,7 +8,7 @@ import User from '../models/User.js';
 import ProjectParticipant from '../models/ProjectParticipant.js'; // You will need to create this model file
 import Evaluation from '../models/Evaluation.js';
 import Rubric from '../models/Rubric.js';
-import nodemailer from 'nodemailer';
+import mailer from '../lib/mailer.js';
 
 // --- EXISTING FUNCTION ---
 export const getAssignedCourses = async (req, res) => {
@@ -656,9 +656,9 @@ export const notifyStudents = async (req, res) => {
     }
 
     // Check if email credentials are configured
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    if (!mailer.isConfigured()) {
       return res.status(500).json({ 
-        message: 'Email credentials not configured. Please set EMAIL_USER and EMAIL_PASS in .env file' 
+        message: 'Email credentials not configured. Please configure the mailer module' 
       });
     }
 
@@ -712,14 +712,7 @@ export const notifyStudents = async (req, res) => {
       });
     }
 
-    // Create transporter for sending emails
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    // We use the centralized mailer (mailer.sendMail)
 
     // Get faculty info
     const faculty = await User.findByPk(facultyId, {
@@ -761,7 +754,7 @@ export const notifyStudents = async (req, res) => {
         results.failed.push({
           name: studentName || 'Unknown',
           email: 'N/A',
-          error: 'No email found'
+          error: 'No email found',
         });
         continue;
       }
@@ -785,7 +778,6 @@ export const notifyStudents = async (req, res) => {
                 <p style="margin: 5px 0;"><strong>Course:</strong> ${project.course?.courseCode} - ${project.course?.name}</p>
                 <p style="margin: 5px 0;"><strong>Project:</strong> ${project.title}</p>
                 <p style="margin: 5px 0;"><strong>Group:</strong> ${project.groupName || `Group ${project.groupNo}`}</p>
-                <p style="margin: 5px 0;"><strong>Submission Type:</strong> ${submissionTitle}</p>
                 <p style="margin: 5px 0; color: #e74c3c;"><strong>Deadline:</strong> ${deadlineFormatted}</p>
               </div>
               
@@ -805,8 +797,8 @@ export const notifyStudents = async (req, res) => {
           `
         };
 
-        await transporter.sendMail(mailOptions);
-        
+        await mailer.sendMail(mailOptions);
+
         results.success.push({
           name: studentName,
           email: studentEmail,

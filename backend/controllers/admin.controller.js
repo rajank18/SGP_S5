@@ -2,7 +2,7 @@ import { Course, CourseFaculty, User, CourseRubric, Rubric, Project, ProjectPart
 import bcrypt from 'bcryptjs';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
-import nodemailer from 'nodemailer';
+import mailer from '../lib/mailer.js';
 import ExcelJS from 'exceljs';
 
 // Create a new course
@@ -466,20 +466,11 @@ export const sendStudentEmails = async (req, res) => {
     }
 
     // Check if email credentials are configured
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    if (!mailer.isConfigured()) {
       return res.status(500).json({ 
-        message: 'Email credentials not configured. Please set EMAIL_USER and EMAIL_PASS in .env file' 
+        message: 'Email credentials not configured. Please configure the mailer module' 
       });
     }
-
-    // Create transporter
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
 
     const results = {
       success: [],
@@ -504,7 +495,7 @@ export const sendStudentEmails = async (req, res) => {
         continue;
       }
 
-      try {
+        try {
         const mailOptions = {
           from: process.env.EMAIL_USER,
           to: email,
@@ -534,7 +525,7 @@ export const sendStudentEmails = async (req, res) => {
           `,
         };
 
-        await transporter.sendMail(mailOptions);
+        await mailer.sendMail(mailOptions);
         results.success.push({
           email: email,
           name: name,

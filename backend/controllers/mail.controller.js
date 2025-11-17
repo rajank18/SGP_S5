@@ -1,29 +1,14 @@
-import nodemailer from 'nodemailer';
 import csvParser from 'csv-parser';
 import { Readable } from 'stream';
+import mailer from '../lib/mailer.js';
 
 // Create transporter using environment variables
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-};
+// Removed createTransporter function as we are using mailer module
 
 // Send bulk emails from CSV
 // Send faculty credentials email
 export const sendFacultyCredentials = async (email, name, password) => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.error('Email credentials not configured');
-      return false;
-    }
-
-    const transporter = createTransporter();
-    
     const mailOptions = {
       from: `"SGP System" <${process.env.EMAIL_USER}>`,
       to: email,
@@ -43,7 +28,7 @@ export const sendFacultyCredentials = async (email, name, password) => {
       `
     };
 
-    await transporter.sendMail(mailOptions);
+    await mailer.sendMail(mailOptions);
     return true;
   } catch (error) {
     console.error('Error sending faculty credentials email:', error);
@@ -58,9 +43,9 @@ export const sendBulkEmails = async (req, res) => {
     }
 
     // Check if email credentials are configured
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    if (!mailer.isConfigured()) {
       return res.status(500).json({ 
-        message: 'Email credentials not configured. Please set EMAIL_USER and EMAIL_PASS in .env file' 
+        message: 'Email credentials not configured. Please configure the mailer module' 
       });
     }
 
@@ -79,7 +64,6 @@ export const sendBulkEmails = async (req, res) => {
       })
       .on('end', async () => {
         try {
-          const transporter = createTransporter();
           const results = {
             success: [],
             failed: [],
@@ -117,7 +101,7 @@ export const sendBulkEmails = async (req, res) => {
                 `,
               };
 
-              await transporter.sendMail(mailOptions);
+              await mailer.sendMail(mailOptions);
               results.success.push({
                 email: student.email,
                 name: student.name,
@@ -167,15 +151,14 @@ export const sendBulkEmails = async (req, res) => {
 // Test email configuration
 export const testEmailConfig = async (req, res) => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    if (!mailer.isConfigured()) {
       return res.status(500).json({ 
-        message: 'Email credentials not configured. Please set EMAIL_USER and EMAIL_PASS in .env file' 
+        message: 'Email credentials not configured. Please configure the mailer module' 
       });
     }
 
-    const transporter = createTransporter();
-    await transporter.verify();
-    
+    await mailer.verifyTransport();
+
     res.status(200).json({ 
       message: 'Email configuration is valid',
       emailUser: process.env.EMAIL_USER 

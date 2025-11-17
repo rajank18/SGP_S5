@@ -2,19 +2,10 @@ import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import nodemailer from 'nodemailer';
+import mailer from '../lib/mailer.js';
 import { Op } from 'sequelize';
 
-// Create transporter for sending emails
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-};
+// Using centralized mailer module (backend/lib/mailer.js)
 
 // --- NEW FUNCTION: Register ---
 // This will create a new user with a correctly hashed password.
@@ -166,12 +157,12 @@ export const forgotPassword = async (req, res) => {
 
     // Send email with reset link
     try {
-      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      if (!mailer.isConfigured()) {
         return res.status(500).json({ message: 'Email service not configured.' });
       }
 
-      const transporter = createTransporter();
-      const resetUrl = `http://localhost:5173/auth/reset-password/${resetToken}`;
+      const frontendBase = process.env.FRONTEND_URL || 'http://localhost:5173' || 'https://pro-grade.vercel.app/';
+      const resetUrl = `${frontendBase.replace(/\/$/, '')}/auth/reset-password/${resetToken}`;
 
       const mailOptions = {
         from: `"ProGrade System" <${process.env.EMAIL_USER}>`,
@@ -193,7 +184,7 @@ export const forgotPassword = async (req, res) => {
         `
       };
 
-      await transporter.sendMail(mailOptions);
+      await mailer.sendMail(mailOptions);
       res.status(200).json({ message: 'Password reset link has been sent to your email. Please check your inbox.' });
     } catch (emailError) {
       console.error('Email sending error:', emailError);

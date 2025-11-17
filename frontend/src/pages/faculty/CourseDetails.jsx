@@ -71,7 +71,17 @@ const CourseDetailsPage = () => {
             });
             if (!res.ok) throw new Error('Failed to fetch project groups');
             const data = await res.json();
-            setGroups(data);
+            // Backend sometimes returns an array directly or an object like { projects: [...] }
+            // Accept both shapes to avoid the UI showing "No project groups assigned" mistakenly.
+            const projects = Array.isArray(data)
+                ? data
+                : (data.projects || data.data || []);
+            if (!Array.isArray(projects)) {
+                console.warn('Unexpected projects payload shape:', data);
+                setGroups([]);
+            } else {
+                setGroups(projects);
+            }
         } catch (err) {
             setGroupsError(err.message);
         } finally {
@@ -125,17 +135,12 @@ const CourseDetailsPage = () => {
     };
 
     // Upload handler
-    const handleUploadCSV = async (e) => {
-        e.preventDefault();
+    const handleUploadCSV = async (fileToUpload) => {
         setUploadError('');
         setUploadSuccess('');
 
-        if (!file) {
+        if (!fileToUpload && !file) {
             setUploadError('Please select a CSV file to upload.');
-            return;
-        }
-        if (!csvPreview || csvPreview.length === 0) {
-            setUploadError('No CSV data to process. Please select a valid CSV file.');
             return;
         }
         if (!token) {
@@ -148,9 +153,9 @@ const CourseDetailsPage = () => {
         try {
             // Send the actual CSV file to the backend
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', fileToUpload || file);
 
-            const res = await apiFetch(`/api/faculty/courses/${course?.id}/projects/upload`, {
+            const res = await apiFetch(`/api/faculty/courses/${course?.id}/groups/upload`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -160,6 +165,14 @@ const CourseDetailsPage = () => {
             });
 
             const data = await res.json();
+
+            // Detailed parsing for validation errors returned by backend
+            if (data.invalidRows && Array.isArray(data.invalidRows)) {
+                const errorDetails = data.invalidRows
+                    .map(r => `Row ${r.row}: ${r.reason}`)
+                    .join('\n');
+                throw new Error(`${data.message}\n\nFailed rows:\n${errorDetails}`);
+            }
 
             if (!res.ok) {
                 throw new Error(data.message || 'File upload failed.');
@@ -182,7 +195,7 @@ const CourseDetailsPage = () => {
             setCsvPreview([]);
             if (fileInputRef.current) fileInputRef.current.value = '';
             fetchGroups();
-            setTimeout(() => setUploadSuccess(''), 5000);
+            setTimeout(() => { setUploadSuccess(''); setShowUploadModal(false); }, 2500);
         } catch (err) {
             console.error('Upload error:', err);
             setUploadError(err.message || 'An unexpected error occurred during upload.');

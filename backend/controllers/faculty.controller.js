@@ -8,7 +8,7 @@ import User from '../models/User.js';
 import ProjectParticipant from '../models/ProjectParticipant.js'; // You will need to create this model file
 import Evaluation from '../models/Evaluation.js';
 import Rubric from '../models/Rubric.js';
-import mailer from '../lib/mailer.js';
+import nodemailer from 'nodemailer';
 
 // --- EXISTING FUNCTION ---
 export const getAssignedCourses = async (req, res) => {
@@ -269,7 +269,7 @@ export const uploadGroups = async (req, res) => {
 
   let createdProjects = 0;
   let addedParticipants = 0;
-  let skippedRows = 0;
+  let skippedRows = [];
   let skippedByReason = {
     internalGuideMismatch: 0,
     missingFields: 0,
@@ -406,7 +406,11 @@ export const uploadGroups = async (req, res) => {
         });
 
         if (!course) {
-          skippedRows++;
+          skippedRows.push({
+            row: rowsToProcess.indexOf(row) + 2,
+            reason: 'Course not found',
+            courseCode: row.courseCode
+          });
           skippedByReason.courseNotFound++;
           continue;
         }
@@ -655,10 +659,10 @@ export const notifyStudents = async (req, res) => {
       });
     }
 
-    // Check if email credentials are configured
-    if (!mailer.isConfigured()) {
+    // Check if email credentials are configured via environment
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
       return res.status(500).json({ 
-        message: 'Email credentials not configured. Please configure the mailer module' 
+        message: 'Email credentials not configured. Please set EMAIL_USER and EMAIL_PASS in .env file' 
       });
     }
 
@@ -712,7 +716,14 @@ export const notifyStudents = async (req, res) => {
       });
     }
 
-    // We use the centralized mailer (mailer.sendMail)
+    // Create a Nodemailer transporter using credentials from env
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
 
     // Get faculty info
     const faculty = await User.findByPk(facultyId, {
@@ -797,7 +808,7 @@ export const notifyStudents = async (req, res) => {
           `
         };
 
-        await mailer.sendMail(mailOptions);
+        await transporter.sendMail(mailOptions);
 
         results.success.push({
           name: studentName,

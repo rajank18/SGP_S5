@@ -29,7 +29,8 @@ router.post(
 router.get('/courses/:courseId/projects', authenticateJWT, getCourseProjects);
 
 // New route: upload groups via CSV
-router.post('/upload-groups', authenticateJWT, upload.single('file'), uploadGroups);
+router.post('/courses/:courseId/groups/upload', authenticateJWT, upload.single('file'), uploadGroups);
+
 
 // Export course data
 router.get('/courses/:courseId/export', authenticateJWT, exportCourseData);
